@@ -11,10 +11,13 @@ export const metadata: Metadata = {
     'Монгол Улсын хамгийн сайхан амралтын газрууд, байгалийн үзэсгэлэнт газруудыг нэг дороос хайх, захиалах платформ.',
   keywords: ['монгол амралт', 'байгалийн үзэсгэлэн', 'аяллын газар', 'resort mongolia'],
   authors: [{ name: 'Монгол Нутаг' }],
+  verification: {
+    google: 'c5-yI2QRbIbIvZ8rM1-xBQcWnM8VSopE7W2OoapxPA0',
+  },
   openGraph: {
     type: 'website',
     locale: 'mn_MN',
-    url: 'https://mongolnudag.mn',
+    url: 'https://mongolia-reso.vercel.app/',
     siteName: 'Монгол Нутаг',
   },
 };
