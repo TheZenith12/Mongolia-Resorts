@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   keywords: ['монгол амралт', 'байгалийн үзэсгэлэн', 'аяллын газар', 'resort mongolia'],
   authors: [{ name: 'Монгол Нутаг' }],
   verification: {
-    google: 'c5-yI2QRbIbIvZ8rM1-xBQcWnM8VSopE7W2OoapxPA0',
+    google: 'H7wLte1yCA4rtrUPTPfz-oZv79ML-WFZ29',
   },
   openGraph: {
     type: 'website',
