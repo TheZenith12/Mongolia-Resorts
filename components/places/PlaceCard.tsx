@@ -10,10 +10,11 @@ interface PlaceCardProps {
   place: Place;
   liked?: boolean;
   onLike?: (id: string) => void;
+  likeLoading?: boolean;
   className?: string;
 }
 
-export default function PlaceCard({ place, liked = false, onLike, className }: PlaceCardProps) {
+export default function PlaceCard({ place, liked = false, onLike, likeLoading = false, className }: PlaceCardProps) {
   const isResort = place.type === 'resort';
 
   return (
@@ -52,10 +53,12 @@ export default function PlaceCard({ place, liked = false, onLike, className }: P
         {/* Like button */}
         {onLike && (
           <button
-            onClick={(e) => { e.preventDefault(); onLike(place.id); }}
+            onClick={(e) => { e.preventDefault(); if (!likeLoading) onLike(place.id); }}
+            disabled={likeLoading}
             className={cn(
               'absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center',
               'transition-all duration-200 backdrop-blur-sm',
+              likeLoading ? 'opacity-60 cursor-not-allowed bg-white/80' :
               liked
                 ? 'bg-red-500 text-white'
                 : 'bg-white/80 text-forest-400 hover:text-red-500'

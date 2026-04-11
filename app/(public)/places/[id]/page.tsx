@@ -1,7 +1,10 @@
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase-server';
 import PlaceDetailClient from '@/components/places/PlaceDetailClient';
+import type { Database } from '@/lib/database.types';
+
+type PlaceMeta = Pick<Database['public']['Tables']['places']['Row'], 'name' | 'short_desc' | 'cover_image'>;
 
 interface PlacePageProps {
   params: { id: string };
@@ -9,12 +12,17 @@ interface PlacePageProps {
 
 export async function generateMetadata({ params }: PlacePageProps): Promise<Metadata> {
   const supabase = await createServerSupabaseClient();
-  const { data } = await supabase.from('places').select('name, short_desc, cover_image').eq('id', params.id).single();
+  const { data } = await supabase
+    .from('places')
+    .select('name, short_desc, cover_image')
+    .eq('id', params.id)
+    .single();
   if (!data) return { title: 'Газар олдсонгүй' };
+  const meta = data as PlaceMeta;
   return {
-    title: (data as any).name,
-    description: (data as any).short_desc ?? '',
-    openGraph: { images: (data as any).cover_image ? [(data as any).cover_image] : [] },
+    title: meta.name,
+    description: meta.short_desc ?? '',
+    openGraph: { images: meta.cover_image ? [meta.cover_image] : [] },
   };
 }
 
@@ -33,7 +41,10 @@ export default async function PlacePage({ params }: PlacePageProps) {
 
   let likedIds: string[] = [];
   if (user) {
-    const { data: likes } = await supabase.from('likes').select('place_id').eq('user_id', user.id);
+    const { data: likes } = await supabase
+      .from('likes')
+      .select('place_id')
+      .eq('user_id', user.id);
     likedIds = likes?.map((l: any) => l.place_id) ?? [];
   }
 
@@ -43,7 +54,10 @@ export default async function PlacePage({ params }: PlacePageProps) {
     profile = data;
   }
 
-  (supabase.rpc as any)('increment_view_count', { place_id: params.id }).then(() => {}).catch(() => {});
+  // Use admin client to bypass RLS for view count increment
+  const adminClient = createAdminClient();
+  (adminClient.rpc as any)('increment_view_count', { place_id: params.id })
+    .then(() => {}).catch(() => {});
 
   return (
     <PlaceDetailClient
