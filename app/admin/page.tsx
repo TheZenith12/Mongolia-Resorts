@@ -1,4 +1,7 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+// app/admin/page.tsx
+// REPLACE the entire file with this
+
+import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase-server';
 import { getCurrentProfile } from '@/lib/actions/auth';
 import {
   MapPin, CalendarCheck, Star, Eye, TrendingUp,
@@ -6,95 +9,129 @@ import {
 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 
-async function getDashboardStats() {
+async function getDashboardStats(role: string, userId: string) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const admin = createAdminClient();
 
-    const [placesRes, bookingsRes, reviewsRes, statsRes] = await Promise.all([
-      supabase.from('places').select('id, type, view_count, is_published', { count: 'exact' }),
-      supabase.from('bookings').select('total_amount, status, payment_status', { count: 'exact' }),
-      supabase.from('reviews').select('id', { count: 'exact' }),
-      supabase.from('site_stats').select('key, value'),
+    if (role === 'super_admin') {
+      const [placesRes, bookingsRes, reviewsRes, statsRes] = await Promise.all([
+        (admin.from('places') as any).select('id, type, view_count, is_published', { count: 'exact' }),
+        (admin.from('bookings') as any).select('total_amount, status, payment_status', { count: 'exact' }),
+        (admin.from('reviews') as any).select('id', { count: 'exact' }),
+        (admin.from('site_stats') as any).select('key, value'),
+      ]);
+
+      const places   = placesRes.data ?? [];
+      const bookings = bookingsRes.data ?? [];
+      const paidBookings = bookings.filter((b: any) => b.payment_status === 'paid');
+      const totalRevenue = paidBookings.reduce((a: number, b: any) => a + b.total_amount, 0);
+      const statsMap: Record<string, number> = {};
+      (statsRes.data ?? []).forEach((s: any) => { statsMap[s.key] = s.value; });
+
+      return {
+        isManager: false,
+        places:          placesRes.count ?? 0,
+        publishedPlaces: places.filter((p: any) => p.is_published).length,
+        resorts:         places.filter((p: any) => p.type === 'resort').length,
+        nature:          places.filter((p: any) => p.type === 'nature').length,
+        bookings:        bookingsRes.count ?? 0,
+        paidBookings:    paidBookings.length,
+        totalRevenue,
+        reviews:         reviewsRes.count ?? 0,
+        totalViews:      places.reduce((a: number, p: any) => a + (p.view_count ?? 0), 0),
+        siteViews:       statsMap['total_views'] ?? 0,
+        placeName:       null,
+      };
+    }
+
+    // Manager: зөвхөн өөрийн газрын статистик
+    const { data: assignment } = await (admin.from('manager_assigned_place') as any)
+      .select('place_id, places(name, view_count, is_published)')
+      .eq('manager_id', userId)
+      .maybeSingle();
+
+    if (!assignment) {
+      return { isManager: true, places: 0, bookings: 0, reviews: 0, totalRevenue: 0, placeName: null, paidBookings: 0, totalViews: 0, publishedPlaces: 0, resorts: 0, nature: 0, siteViews: 0 };
+    }
+
+    const placeId = assignment.place_id;
+    const [bookingsRes, reviewsRes] = await Promise.all([
+      (admin.from('bookings') as any).select('total_amount, payment_status', { count: 'exact' }).eq('place_id', placeId),
+      (admin.from('reviews') as any).select('id', { count: 'exact' }).eq('place_id', placeId),
     ]);
 
-    const places   = placesRes.data ?? [];
     const bookings = bookingsRes.data ?? [];
     const paidBookings = bookings.filter((b: any) => b.payment_status === 'paid');
     const totalRevenue = paidBookings.reduce((a: number, b: any) => a + b.total_amount, 0);
 
-    const statsMap: Record<string, number> = {};
-    (statsRes.data ?? []).forEach((s: any) => { statsMap[s.key] = s.value; });
-
     return {
-      places:          placesRes.count ?? 0,
-      publishedPlaces: places.filter((p: any) => p.is_published).length,
-      resorts:         places.filter((p: any) => p.type === 'resort').length,
-      nature:          places.filter((p: any) => p.type === 'nature').length,
+      isManager:       true,
+      placeName:       assignment.places?.name ?? null,
+      places:          1,
+      publishedPlaces: assignment.places?.is_published ? 1 : 0,
       bookings:        bookingsRes.count ?? 0,
       paidBookings:    paidBookings.length,
       totalRevenue,
       reviews:         reviewsRes.count ?? 0,
-      totalViews:      places.reduce((a: number, p: any) => a + (p.view_count ?? 0), 0),
-      siteViews:       statsMap['total_views'] ?? 0,
+      totalViews:      assignment.places?.view_count ?? 0,
+      resorts: 0, nature: 0, siteViews: 0,
     };
   } catch {
     return {
+      isManager: false,
       places: 0, publishedPlaces: 0, resorts: 0, nature: 0,
       bookings: 0, paidBookings: 0, totalRevenue: 0,
-      reviews: 0, totalViews: 0, siteViews: 0,
+      reviews: 0, totalViews: 0, siteViews: 0, placeName: null,
     };
   }
 }
 
 export default async function AdminDashboard() {
-  const [profile, stats] = await Promise.all([
-    getCurrentProfile(),
-    getDashboardStats(),
-  ]);
+  const profileRaw = await getCurrentProfile();
+  if (!profileRaw) return null;
+  const profile = profileRaw as any;
 
-  const statCards = [
-    { label: 'Нийт газрууд',    value: stats.places,         icon: MapPin,        color: 'bg-forest-50 text-forest-600',  sub: `${stats.publishedPlaces} нийтлэгдсэн` },
-    { label: 'Нийт захиалгууд', value: stats.bookings,       icon: CalendarCheck, color: 'bg-amber-50 text-amber-600',    sub: `${stats.paidBookings} төлөгдсөн` },
-    { label: 'Нийт үзэлт',      value: stats.totalViews.toLocaleString(), icon: Eye, color: 'bg-blue-50 text-blue-600', sub: 'Нийт хандалт' },
-    { label: 'Орлого',          value: formatPrice(stats.totalRevenue), icon: DollarSign, color: 'bg-green-50 text-green-600', sub: `${stats.paidBookings} захиалгаас` },
-    { label: 'Амралтын газар',  value: stats.resorts,        icon: Building2,     color: 'bg-orange-50 text-orange-600',  sub: 'Нийт' },
-    { label: 'Байгалийн газар', value: stats.nature,         icon: Leaf,          color: 'bg-teal-50 text-teal-600',      sub: 'Нийт' },
-    { label: 'Сэтгэгдлүүд',     value: stats.reviews,        icon: Star,          color: 'bg-yellow-50 text-yellow-600',  sub: 'Нийт үнэлгээ' },
-    { label: 'Сайтын хандалт',  value: stats.siteViews.toLocaleString(), icon: TrendingUp, color: 'bg-purple-50 text-purple-600', sub: 'Нийт' },
-  ];
+  const role = profile.role;
+  const stats = await getDashboardStats(role, profile.id as string);
+
+  const cards = stats.isManager
+    ? [
+        { label: 'Нийт захиалга',   value: stats.bookings,            icon: CalendarCheck, color: 'bg-blue-500' },
+        { label: 'Орлого',          value: formatPrice(stats.totalRevenue), icon: DollarSign,   color: 'bg-green-500' },
+        { label: 'Сэтгэгдэл',       value: stats.reviews,             icon: Star,          color: 'bg-amber-500' },
+        { label: 'Үзэлт',           value: stats.totalViews,          icon: Eye,           color: 'bg-purple-500' },
+      ]
+    : [
+        { label: 'Нийт газар',       value: stats.places,             icon: MapPin,        color: 'bg-forest-600' },
+        { label: 'Нийт захиалга',    value: stats.bookings,           icon: CalendarCheck, color: 'bg-blue-500' },
+        { label: 'Нийт орлого',      value: formatPrice(stats.totalRevenue), icon: DollarSign, color: 'bg-green-500' },
+        { label: 'Сэтгэгдэл',        value: stats.reviews,            icon: Star,          color: 'bg-amber-500' },
+      ];
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="font-display text-3xl font-semibold text-forest-900">
-          Сайн байна уу, {(profile as any)?.full_name?.split(' ')[0] ?? 'Админ'} 👋
+          {stats.isManager ? `${stats.placeName ?? 'Миний газар'} — Самбар` : 'Самбар'}
         </h1>
-        <p className="text-forest-500 mt-1">Удирдлагын самбарт тавтай морилно уу</p>
+        <p className="text-forest-500 text-sm mt-1">
+          {stats.isManager ? 'Зөвхөн таны газрын мэдээлэл' : 'Нийт систем'}
+        </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-        {statCards.map((card) => {
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {cards.map((card) => {
           const Icon = card.icon;
           return (
             <div key={card.label} className="bg-white rounded-2xl border border-gray-100 p-5">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${card.color}`}>
-                <Icon size={19} />
+              <div className={`w-10 h-10 ${card.color} rounded-xl flex items-center justify-center mb-3`}>
+                <Icon size={18} className="text-white" />
               </div>
-              <div className="font-display text-2xl font-semibold text-forest-900">{card.value}</div>
-              <div className="text-forest-700 text-sm font-medium mt-0.5">{card.label}</div>
-              <div className="text-forest-400 text-xs mt-1">{card.sub}</div>
+              <div className="text-2xl font-bold text-forest-900">{card.value}</div>
+              <div className="text-xs text-forest-500 mt-1">{card.label}</div>
             </div>
           );
         })}
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
-        <h2 className="font-semibold text-forest-900 mb-4">Хурдан үйлдэл</h2>
-        <div className="flex flex-wrap gap-3">
-          <a href="/admin/places/new" className="btn-primary text-sm">+ Шинэ газар нэмэх</a>
-          <a href="/admin/bookings"   className="btn-secondary text-sm">Захиалгууд харах</a>
-          <a href="/" target="_blank" className="btn-secondary text-sm">Сайт харах →</a>
-        </div>
       </div>
     </div>
   );

@@ -1,10 +1,12 @@
 'use client';
+// components/admin/AdminSidebar.tsx
+// REPLACE the entire file with this
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, MapPin, CalendarCheck, Users,
-  Star, Settings, LogOut, Leaf, ChevronRight,
+  Star, Settings, LogOut, Leaf, ChevronRight, Building2,
 } from 'lucide-react';
 import { cn, getInitials } from '@/lib/utils';
 import { signOut } from '@/lib/actions/auth';
@@ -12,30 +14,56 @@ import type { Profile } from '@/lib/types';
 
 interface AdminSidebarProps {
   profile: Profile;
+  assignedPlaceId?: string | null;
+  assignedPlaceName?: string | null;
 }
 
-export default function AdminSidebar({ profile }: AdminSidebarProps) {
+export default function AdminSidebar({
+  profile,
+  assignedPlaceId,
+  assignedPlaceName,
+}: AdminSidebarProps) {
   const pathname = usePathname();
   const isSuperAdmin = profile.role === 'super_admin';
+  const isManager = profile.role === 'manager';
 
-  const navGroups = [
-    {
-      label: 'Үндсэн',
-      items: [
-        { href: '/admin',          icon: LayoutDashboard, label: 'Самбар' },
-        { href: '/admin/places',   icon: MapPin,          label: 'Газрууд' },
-        { href: '/admin/bookings', icon: CalendarCheck,   label: 'Захиалгууд' },
-        { href: '/admin/reviews',  icon: Star,            label: 'Сэтгэгдлүүд' },
-      ],
-    },
-    ...(isSuperAdmin ? [{
-      label: 'Удирдлага',
-      items: [
-        { href: '/admin/users', icon: Users,    label: 'Хэрэглэгчид' },
-        { href: '/admin/settings', icon: Settings, label: 'Тохиргоо' },
-      ],
-    }] : []),
-  ];
+  // Super admin: бүгдийг харна
+  // Manager: зөвхөн өөрийн газар
+  const navGroups = isSuperAdmin
+    ? [
+        {
+          label: 'Үндсэн',
+          items: [
+            { href: '/admin',          icon: LayoutDashboard, label: 'Самбар' },
+            { href: '/admin/places',   icon: MapPin,          label: 'Газрууд' },
+            { href: '/admin/bookings', icon: CalendarCheck,   label: 'Захиалгууд' },
+            { href: '/admin/reviews',  icon: Star,            label: 'Сэтгэгдлүүд' },
+          ],
+        },
+        {
+          label: 'Удирдлага',
+          items: [
+            { href: '/admin/users',    icon: Users,    label: 'Хэрэглэгчид' },
+            { href: '/admin/settings', icon: Settings, label: 'Тохиргоо' },
+          ],
+        },
+      ]
+    : [
+        // Manager: зөвхөн өөрийн газартай холбоотой цэсүүд
+        {
+          label: 'Миний газар',
+          items: [
+            { href: '/admin',          icon: LayoutDashboard, label: 'Самбар' },
+            ...(assignedPlaceId
+              ? [
+                  { href: `/admin/places/${assignedPlaceId}/edit`, icon: Building2,    label: assignedPlaceName ?? 'Миний газар' },
+                  { href: '/admin/bookings',                       icon: CalendarCheck, label: 'Захиалгууд' },
+                  { href: '/admin/reviews',                        icon: Star,          label: 'Сэтгэгдлүүд' },
+                ]
+              : []),
+          ],
+        },
+      ];
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-64 bg-forest-950 border-r border-forest-800 flex flex-col z-40">
@@ -46,9 +74,19 @@ export default function AdminSidebar({ profile }: AdminSidebarProps) {
         </div>
         <div>
           <div className="font-display text-white text-lg font-semibold leading-none">Монгол Нутаг</div>
-          <div className="text-forest-400 text-[10px] mt-0.5 uppercase tracking-wide">Admin Panel</div>
+          <div className="text-forest-400 text-[10px] mt-0.5 uppercase tracking-wide">
+            {isSuperAdmin ? 'Super Admin' : 'Manager Panel'}
+          </div>
         </div>
       </div>
+
+      {/* Manager badge */}
+      {isManager && assignedPlaceName && (
+        <div className="mx-3 mt-3 px-3 py-2 bg-forest-800/60 rounded-xl border border-forest-700">
+          <div className="text-[10px] text-forest-500 uppercase tracking-wider mb-0.5">Оноогдсон газар</div>
+          <div className="text-amber-300 text-xs font-semibold truncate">🏕 {assignedPlaceName}</div>
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
@@ -73,7 +111,7 @@ export default function AdminSidebar({ profile }: AdminSidebarProps) {
                     )}
                   >
                     <Icon size={17} />
-                    <span className="flex-1">{item.label}</span>
+                    <span className="flex-1 truncate">{item.label}</span>
                     {active && <ChevronRight size={13} className="text-forest-400" />}
                   </Link>
                 );
@@ -92,13 +130,15 @@ export default function AdminSidebar({ profile }: AdminSidebarProps) {
           <div className="flex-1 min-w-0">
             <div className="text-white text-sm font-medium truncate">{profile.full_name}</div>
             <div className="text-forest-400 text-xs">
-              {profile.role === 'super_admin' ? 'Super Admin' : 'Manager'}
+              {profile.role === 'super_admin' ? '👑 Super Admin' : '🔑 Manager'}
             </div>
           </div>
         </div>
         <form action={signOut}>
-          <button type="submit"
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-forest-400 hover:bg-forest-800 hover:text-red-400 text-sm transition-colors">
+          <button
+            type="submit"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-forest-400 hover:bg-forest-800 hover:text-red-400 text-sm transition-colors"
+          >
             <LogOut size={15} /> Гарах
           </button>
         </form>
