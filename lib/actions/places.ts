@@ -1,18 +1,39 @@
 'use server';
 
-import { createServerSupabaseClient } from '@/lib/supabase-server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase-server';
 import type { Place, PlaceFormData, PlacesFilter, PaginatedResponse, SiteStats } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
-function getAdminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+// ── Auth Context Helper ────────────────────────────────────────────────────────
+
+async function getAuthContext() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Нэвтрэх шаардлагатай');
+
+  const { data: profile } = await supabase
+    .from('profiles').select('role').eq('id', user.id).single();
+  const role = (profile as any)?.role as string;
+
+  let assignedPlaceId: string | null = null;
+  if (role === 'manager') {
+    const admin = createAdminClient();
+    const { data: assignment } = await (admin.from('manager_assigned_place') as any)
+      .select('place_id')
+      .eq('manager_id', user.id)
+      .maybeSingle();
+    assignedPlaceId = assignment?.place_id ?? null;
+  }
+
+  return { user, role, assignedPlaceId };
 }
 
+// ── Constants ─────────────────────────────────────────────────────────────────
+
 const EMPTY: PaginatedResponse<Place> = { data: [], count: 0, page: 1, pageSize: 12, totalPages: 0 };
+
+// ── Public Actions ─────────────────────────────────────────────────────────────
 
 export async function getPlaces(filter: PlacesFilter = {}): Promise<PaginatedResponse<Place>> {
   try {
@@ -132,50 +153,88 @@ export async function getAdminPlaces(filter: PlacesFilter = {}): Promise<Paginat
       .order('created_at', { ascending: false })
       .range(from, from + pageSize - 1);
     if (error) return EMPTY;
-    return { data: (data as Place[]) ?? [], count: count ?? 0, page, pageSize, totalPages: Math.ceil((count ?? 0) / pageSize) };
+    return {
+      data: (data as Place[]) ?? [],
+      count: count ?? 0,
+      page,
+      pageSize,
+      totalPages: Math.ceil((count ?? 0) / pageSize),
+    };
   } catch {
     return EMPTY;
   }
 }
 
+// ── Admin / Manager Actions ────────────────────────────────────────────────────
+
 export async function createPlace(formData: PlaceFormData): Promise<Place> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Нэвтрэх шаардлагатай');
-  const { data, error } = await (supabase
-    .from('places') as any)
+  const { role, user } = await getAuthContext();
+
+  if (role !== 'super_admin') {
+    throw new Error('Зөвхөн Super Admin газар үүсгэж чадна');
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await (admin.from('places') as any)
     .insert({ ...formData, created_by: user.id })
     .select()
     .single();
+
   if (error) throw new Error(error.message);
   revalidatePath('/admin/places');
   revalidatePath('/');
   return data as Place;
 }
 
-export async function updatePlace(id: string, formData: Partial<PlaceFormData>): Promise<Place> {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await (supabase
-    .from('places') as any)
+export async function updatePlace(id: string, formData: PlaceFormData) {
+  const { role, assignedPlaceId } = await getAuthContext();
+
+  if (role === 'manager') {
+    if (assignedPlaceId !== id) throw new Error('Энэ газрыг засах эрх байхгүй');
+  } else if (role !== 'super_admin') {
+    throw new Error('Эрх хүрэлцэхгүй');
+  }
+
+  const admin = createAdminClient();
+  const { error } = await (admin.from('places') as any)
     .update({ ...formData, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
+    .eq('id', id);
+
+  if (error) throw new Error(error.message);
+  revalidatePath('/admin/places');
+  revalidatePath(`/admin/places/${id}/edit`);
+  revalidatePath(`/places/${id}`);
+}
+
+export async function deletePlace(id: string) {
+  const { role } = await getAuthContext();
+
+  if (role === 'manager') throw new Error('Manager газар устгах эрхгүй');
+  if (role !== 'super_admin') throw new Error('Эрх хүрэлцэхгүй');
+
+  const admin = createAdminClient();
+  const { error } = await (admin.from('places') as any).delete().eq('id', id);
+  if (error) throw new Error(error.message);
+  revalidatePath('/admin/places');
+  redirect('/admin/places');
+}
+
+export async function togglePublish(id: string, isPublished: boolean) {
+  const { role, assignedPlaceId } = await getAuthContext();
+
+  // Manager зөвхөн өөрийн газрын publish-г өөрчилж чадна
+  if (role === 'manager') {
+    if (assignedPlaceId !== id) throw new Error('Энэ газрыг засах эрх байхгүй');
+  } else if (role !== 'super_admin') {
+    throw new Error('Эрх хүрэлцэхгүй');
+  }
+
+  const admin = createAdminClient();
+  const { error } = await (admin.from('places') as any)
+    .update({ is_published: isPublished, updated_at: new Date().toISOString() })
+    .eq('id', id);
+
   if (error) throw new Error(error.message);
   revalidatePath('/admin/places');
   revalidatePath(`/places/${id}`);
-  revalidatePath('/');
-  return data as Place;
-}
-
-export async function deletePlace(id: string): Promise<void> {
-  const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.from('places').delete().eq('id', id);
-  if (error) throw new Error(error.message);
-  revalidatePath('/admin/places');
-  revalidatePath('/');
-}
-
-export async function togglePublish(id: string, isPublished: boolean): Promise<void> {
-  await updatePlace(id, { is_published: isPublished });
 }

@@ -70,7 +70,7 @@ export async function createBooking(formData: BookingFormData): Promise<Booking>
     .single();
 
   if (!place) throw new Error('Газар олдсонгүй');
-  if ((!place as any).price_per_night) throw new Error('Энэ газар захиалах боломжгүй');
+  if (!(place as any).price_per_night) throw new Error('Энэ газар захиалах боломжгүй');
 
   const nights = calculateNights(formData.check_in, formData.check_out);
   if (nights < 1) throw new Error('Буцах огноо буруу байна');

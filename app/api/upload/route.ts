@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
+
     if (!file) return NextResponse.json({ error: 'Файл байхгүй байна' }, { status: 400 });
 
     const bytes  = await file.arrayBuffer();

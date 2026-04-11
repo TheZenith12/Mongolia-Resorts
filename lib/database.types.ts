@@ -390,6 +390,42 @@ export type Database = {
           },
         ]
       }
+      manager_assigned_place: {
+        Row: {
+          manager_id: string
+          place_id: string
+          assigned_at: string
+          assigned_by: string | null
+        }
+        Insert: {
+          manager_id: string
+          place_id: string
+          assigned_at?: string
+          assigned_by?: string | null
+        }
+        Update: {
+          manager_id?: string
+          place_id?: string
+          assigned_at?: string
+          assigned_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_assigned_place_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_assigned_place_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_stats: {
         Row: {
           key: string
