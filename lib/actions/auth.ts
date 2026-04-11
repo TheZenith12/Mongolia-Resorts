@@ -1,7 +1,7 @@
 'use server';
 
 import { createServerSupabaseClient } from '@/lib/supabase-server';
-import type { BookingFormData, Booking } from '@/lib/types';
+import type { BookingFormData, Booking, Place} from '@/lib/types';
 import { calculateNights } from '@/lib/utils';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -146,10 +146,20 @@ export async function toggleLike(placeId: string): Promise<boolean> {
     .maybeSingle();
 
   if (existing) {
-    await supabase.from('likes').delete().eq('user_id', user.id).eq('place_id', placeId);
+    const { error } = await supabase.from('likes').delete().eq('user_id', user.id).eq('place_id', placeId);
+    if (error) throw new Error(error.message);
+    revalidatePath('/');
+    revalidatePath('/places');
+    revalidatePath(`/places/${placeId}`);
+    revalidatePath('/profile/favorites');
     return false;
   } else {
-    await (supabase.from('likes') as any).insert({ user_id: user.id, place_id: placeId });
+    const { error } = await (supabase.from('likes') as any).insert({ user_id: user.id, place_id: placeId });
+    if (error) throw new Error(error.message);
+    revalidatePath('/');
+    revalidatePath('/places');
+    revalidatePath(`/places/${placeId}`);
+    revalidatePath('/profile/favorites');
     return true;
   }
 }
@@ -185,4 +195,22 @@ export async function createReview(
     .insert({ place_id: placeId, user_id: user.id, rating, title, body });
   if (error) throw new Error(error.message);
   revalidatePath(`/places/${placeId}`);
+}
+
+// ── Liked Places ──────────────────────────────────────────────────────────────
+
+export async function getUserLikedPlaces(): Promise<Place[]> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data } = await supabase
+      .from('likes')
+      .select('place:places(*)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    return (data ?? []).map((l: any) => l.place).filter(Boolean) as Place[];
+  } catch {
+    return [];
+  }
 }

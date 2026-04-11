@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, MapPin, Eye, Building2, Leaf, User, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, X, MapPin, Eye, Building2, Leaf, Heart, LogOut, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SiteStats, Profile } from '@/lib/types';
 import { signOut } from '@/lib/actions/auth';
@@ -115,11 +115,18 @@ export default function Header({ stats, profile }: HeaderProps) {
                       </Link>
                     )}
                     <Link
-                      href="/profile/bookings"
+                      href="/profile/bookings?tab=bookings"
                       className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-forest-700 hover:bg-forest-50"
                       onClick={() => setUserMenuOpen(false)}
                     >
                       <MapPin size={15} /> Миний захиалгууд
+                    </Link>
+                    <Link
+                      href="/profile/bookings?tab=favorites"
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-forest-700 hover:bg-forest-50"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <Heart size={15} /> Дуртай газрууд
                     </Link>
                     <hr className="border-forest-100 my-1" />
                     <form action={signOut}>

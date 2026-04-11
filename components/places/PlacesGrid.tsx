@@ -19,10 +19,31 @@ interface PlacesGridProps {
 export default function PlacesGrid({ places, likedIds, pagination, searchParams }: PlacesGridProps) {
   const router = useRouter();
   const [liked, setLiked] = useState<Set<string>>(new Set(likedIds));
+  // Optimistic like_count: place.id -> current count
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>(
+    Object.fromEntries(places.map((p) => [p.id, p.like_count]))
+  );
+  const [loadingId, setLoadingId] = useState<string | null>(null);
 
   async function handleLike(placeId: string) {
+    if (loadingId) return; // prevent double-click
+    setLoadingId(placeId);
+
+    // Optimistic update
+    const wasLiked = liked.has(placeId);
+    setLiked((prev) => {
+      const next = new Set(prev);
+      if (wasLiked) next.delete(placeId); else next.add(placeId);
+      return next;
+    });
+    setLikeCounts((prev) => ({
+      ...prev,
+      [placeId]: Math.max(0, (prev[placeId] ?? 0) + (wasLiked ? -1 : 1)),
+    }));
+
     try {
       const result = await toggleLike(placeId);
+      // Sync with server result (in case of mismatch)
       setLiked((prev) => {
         const next = new Set(prev);
         if (result) next.add(placeId); else next.delete(placeId);
@@ -30,8 +51,20 @@ export default function PlacesGrid({ places, likedIds, pagination, searchParams 
       });
       toast.success(result ? '❤️ Хадгаллаа' : 'Хадгалалтаас хасагдлаа');
     } catch {
+      // Rollback on error
+      setLiked((prev) => {
+        const next = new Set(prev);
+        if (wasLiked) next.add(placeId); else next.delete(placeId);
+        return next;
+      });
+      setLikeCounts((prev) => ({
+        ...prev,
+        [placeId]: Math.max(0, (prev[placeId] ?? 0) + (wasLiked ? 1 : -1)),
+      }));
       toast.error('Нэвтрэх шаардлагатай');
       router.push('/auth/login');
+    } finally {
+      setLoadingId(null);
     }
   }
 
@@ -54,7 +87,7 @@ export default function PlacesGrid({ places, likedIds, pagination, searchParams 
       Object.fromEntries(Object.entries(searchParams).filter(([, v]) => v != null)) as Record<string, string>
     );
     params.set('page', String(page));
-    return `/?${params.toString()}`;
+    return `/places?${params.toString()}`;
   }
 
   return (
@@ -67,15 +100,15 @@ export default function PlacesGrid({ places, likedIds, pagination, searchParams 
             style={{ animationDelay: `${i * 60}ms`, animationFillMode: 'forwards' }}
           >
             <PlaceCard
-              place={place}
+              place={{ ...place, like_count: likeCounts[place.id] ?? place.like_count }}
               liked={liked.has(place.id)}
               onLike={handleLike}
+              likeLoading={loadingId === place.id}
             />
           </div>
         ))}
       </div>
 
-      {/* Pagination */}
       {pagination.totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-12">
           <a
