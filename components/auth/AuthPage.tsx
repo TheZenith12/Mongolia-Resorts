@@ -84,7 +84,7 @@ export default function AuthPage({ mode = "login" }: { mode?: Mode }) {
           <div>
             <h2 className="font-display text-5xl text-white font-semibold leading-tight mb-4">
               Байгалийн гоо <br /> үзэсгэлэнг <br />
-              <span className="text-amber-300 italic">мэдрэ</span>
+              <span className="text-amber-300 italic">мэдрээрэй</span>
             </h2>
             <p className="text-forest-300 text-lg">
               1000+ амралтын газар, байгалийн үзэсгэлэнт газрыг нэг дороос
