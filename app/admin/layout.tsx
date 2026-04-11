@@ -1,9 +1,8 @@
 // app/admin/layout.tsx
-// REPLACE the entire file with this
+// REPLACE the entire file
 
 import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase-server';
 import AdminSidebar from '@/components/admin/AdminSidebar';
-import { redirect } from 'next/navigation';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerSupabaseClient();
@@ -11,16 +10,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (!user) {
     return (
-      <div style={{padding: '40px', fontFamily: 'monospace', background: '#0a1a10', color: '#fff', minHeight: '100vh'}}>
-        <h2>❌ User байхгүй байна</h2>
-        <p style={{color: '#f87171'}}>Шалтгаан: {userError?.message ?? 'Session олдсонгүй'}</p>
-        <br/>
-        <a href="/auth/login" style={{color: '#4ade80'}}>→ Login хуудас руу очих</a>
+      <div style={{padding:'40px',fontFamily:'monospace',background:'#0a1a10',color:'#fff',minHeight:'100vh'}}>
+        <h2>❌ Нэвтрэх шаардлагатай</h2>
+        <p style={{color:'#f87171'}}>{userError?.message ?? 'Session олдсонгүй'}</p>
+        <a href="/auth/login" style={{color:'#4ade80'}}>→ Login хуудас руу очих</a>
       </div>
     );
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
@@ -28,11 +26,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (!profile) {
     return (
-      <div style={{padding: '40px', fontFamily: 'monospace', background: '#0a1a10', color: '#fff', minHeight: '100vh'}}>
-        <h2>❌ Profile байхгүй байна</h2>
+      <div style={{padding:'40px',fontFamily:'monospace',background:'#0a1a10',color:'#fff',minHeight:'100vh'}}>
+        <h2>❌ Profile байхгүй</h2>
         <p>User ID: {user.id}</p>
-        <p>Email: {user.email}</p>
-        <p style={{color: '#f87171'}}>Profile алдаа: {profileError?.message}</p>
       </div>
     );
   }
@@ -41,13 +37,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (!['super_admin', 'manager'].includes(role)) {
     return (
-      <div style={{padding: '40px', fontFamily: 'monospace', background: '#0a1a10', color: '#fff', minHeight: '100vh'}}>
+      <div style={{padding:'40px',fontFamily:'monospace',background:'#0a1a10',color:'#fff',minHeight:'100vh'}}>
         <h2>❌ Эрх байхгүй</h2>
-        <p>Email: {user.email}</p>
-        <p>Одоогийн role: <strong style={{color: '#fbbf24'}}>{role}</strong></p>
-        <p style={{color: '#f87171'}}>Admin эрх шаардлагатай</p>
-        <br/>
-        <a href="/" style={{color: '#4ade80'}}>→ Нүүр хуудас руу очих</a>
+        <p>Одоогийн role: <strong style={{color:'#fbbf24'}}>{role}</strong></p>
+        <a href="/" style={{color:'#4ade80'}}>→ Нүүр хуудас руу очих</a>
       </div>
     );
   }
@@ -63,19 +56,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       .eq('manager_id', user.id)
       .maybeSingle();
 
-    if (!assignment) {
-      // Manager боловч газар оноогдоогүй бол
-      return (
-        <div style={{padding: '40px', fontFamily: 'monospace', background: '#0a1a10', color: '#fff', minHeight: '100vh'}}>
-          <h2>⚠️ Газар оноогдоогүй байна</h2>
-          <p>Таны бүртгэлд газар оноогдоогүй байна.</p>
-          <p style={{color: '#fbbf24'}}>Super Admin-аас газар оноолгоно уу.</p>
-        </div>
-      );
+    // ⚠️ Газар оноогдоогүй бол REDIRECT ХИЙХГҮЙ — зүгээр мессеж харуулна
+    // (redirect loop-оос сэргийлэх)
+    if (assignment) {
+      assignedPlaceId = assignment.place_id;
+      assignedPlaceName = assignment.places?.name ?? null;
     }
-
-    assignedPlaceId = assignment.place_id;
-    assignedPlaceName = assignment.places?.name ?? null;
   }
 
   return (
@@ -86,6 +72,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         assignedPlaceName={assignedPlaceName}
       />
       <main className="flex-1 ml-64 p-8 bg-gray-50 min-h-screen">
+        {/* Manager-т газар оноогдоогүй бол warning харуулах — redirect хийхгүй */}
+        {role === 'manager' && !assignedPlaceId && (
+          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-5">
+            <h3 className="font-semibold text-amber-800 mb-1">⚠️ Газар оноогдоогүй байна</h3>
+            <p className="text-amber-700 text-sm">
+              Super Admin таньд газар оноогоогүй байна. Администраторт хандана уу.
+            </p>
+          </div>
+        )}
         {children}
       </main>
     </div>

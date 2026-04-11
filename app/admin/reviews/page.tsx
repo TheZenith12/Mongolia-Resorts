@@ -1,23 +1,45 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+// app/admin/reviews/page.tsx
+// REPLACE the entire file
+
+import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase-server';
 import { getCurrentProfile } from '@/lib/actions/auth';
 import { formatDate, getInitials } from '@/lib/utils';
-import { Star, Trash2, CheckCircle } from 'lucide-react';
+import { Star, CheckCircle } from 'lucide-react';
 import AdminReviewActions from '@/components/admin/AdminReviewActions';
 
-async function getReviews() {
-  const supabase = await createServerSupabaseClient();
-  const { data } = await supabase
-    .from('reviews')
+async function getReviews(role: string, userId: string) {
+  const admin = createAdminClient();
+
+  if (role === 'super_admin') {
+    const { data } = await (admin.from('reviews') as any)
+      .select('*, place:places(id, name), user:profiles(id, full_name)')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    return data ?? [];
+  }
+
+  // Manager: зөвхөн өөрийн газрын reviews
+  const { data: assignment } = await (admin.from('manager_assigned_place') as any)
+    .select('place_id')
+    .eq('manager_id', userId)
+    .maybeSingle();
+
+  if (!assignment?.place_id) return [];
+
+  const { data } = await (admin.from('reviews') as any)
     .select('*, place:places(id, name), user:profiles(id, full_name)')
+    .eq('place_id', assignment.place_id)
     .order('created_at', { ascending: false })
     .limit(100);
   return data ?? [];
 }
 
 export default async function AdminReviewsPage() {
-  const profile = await getCurrentProfile();
-  if (!profile) return null;
-  const reviews = await getReviews();
+  const profileRaw = await getCurrentProfile();
+  if (!profileRaw) return null;
+  const profile = profileRaw as any;
+
+  const reviews = await getReviews(profile.role, profile.id);
 
   return (
     <div>
@@ -31,7 +53,6 @@ export default async function AdminReviewsPage() {
           <div key={review.id} className="bg-white rounded-2xl border border-gray-100 p-5">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
-                {/* User & Place */}
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-9 h-9 rounded-full bg-forest-100 flex items-center justify-center text-forest-600 text-sm font-semibold">
                     {getInitials(review.user?.full_name)}
@@ -41,9 +62,7 @@ export default async function AdminReviewsPage() {
                       {review.user?.full_name ?? 'Хэрэглэгч'}
                     </span>
                     <span className="text-forest-400 text-xs mx-1.5">•</span>
-                    <span className="text-forest-500 text-xs">
-                      {review.place?.name ?? 'Газар'}
-                    </span>
+                    <span className="text-forest-500 text-xs">{review.place?.name ?? 'Газар'}</span>
                   </div>
                   {review.is_verified && (
                     <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
@@ -52,25 +71,16 @@ export default async function AdminReviewsPage() {
                   )}
                 </div>
 
-                {/* Rating */}
                 <div className="flex gap-0.5 mb-2">
                   {[1,2,3,4,5].map((s) => (
-                    <Star
-                      key={s}
-                      size={14}
-                      className={s <= review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}
-                    />
+                    <Star key={s} size={14}
+                      className={s <= review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200'} />
                   ))}
                   <span className="ml-1.5 text-xs font-semibold text-forest-800">{review.rating}/5</span>
                 </div>
 
-                {review.title && (
-                  <p className="font-semibold text-forest-800 text-sm mb-1">{review.title}</p>
-                )}
-                {review.body && (
-                  <p className="text-forest-600 text-sm leading-relaxed">{review.body}</p>
-                )}
-
+                {review.title && <p className="font-semibold text-forest-800 text-sm mb-1">{review.title}</p>}
+                {review.body  && <p className="text-forest-600 text-sm leading-relaxed">{review.body}</p>}
                 <p className="text-forest-400 text-xs mt-2">{formatDate(review.created_at)}</p>
               </div>
 
