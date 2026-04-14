@@ -1,17 +1,19 @@
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import HeroSection from '@/components/home/HeroSection';
 import PlacesSection from '@/components/home/PlacesSection';
 import FeaturedSection from '@/components/home/FeaturedSection';
 import { getFeaturedPlaces, getSiteStats } from '@/lib/actions/places';
+import { buildWebsiteSchema } from '@/lib/seo';
 import type { SiteStats } from '@/lib/types';
 
 const defaultStats: SiteStats = {
-  total_views: 0,
-  total_places: 0,
-  total_resorts: 0,
-  total_nature: 0,
-  total_users: 0,
-  total_bookings: 0,
+  total_views: 0, total_places: 0, total_resorts: 0,
+  total_nature: 0, total_users: 0, total_bookings: 0,
+};
+
+export const metadata: Metadata = {
+  alternates: { canonical: 'https://mongolia-reso.vercel.app/' },
 };
 
 export default async function HomePage({
@@ -24,8 +26,16 @@ export default async function HomePage({
     getSiteStats().catch(() => defaultStats),
   ]);
 
+  const websiteSchema = buildWebsiteSchema();
+
   return (
     <>
+      {/* WebSite + Organization structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
+
       <HeroSection stats={stats} />
 
       {!searchParams.search && !searchParams.type && !searchParams.province && (

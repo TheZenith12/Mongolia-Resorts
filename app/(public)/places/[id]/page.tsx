@@ -1,10 +1,9 @@
 import { notFound } from 'next/navigation';
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase-server';
 import PlaceDetailClient from '@/components/places/PlaceDetailClient';
-import type { Database } from '@/lib/database.types';
-
-type PlaceMeta = Pick<Database['public']['Tables']['places']['Row'], 'name' | 'short_desc' | 'cover_image'>;
+import { buildPlaceMetadata, buildPlaceSchema, buildBreadcrumbSchema } from '@/lib/seo';
+import type { Place } from '@/lib/types';
 
 interface PlacePageProps {
   params: { id: string };
@@ -14,16 +13,12 @@ export async function generateMetadata({ params }: PlacePageProps): Promise<Meta
   const supabase = await createServerSupabaseClient();
   const { data } = await supabase
     .from('places')
-    .select('name, short_desc, cover_image')
+    .select('*')
     .eq('id', params.id)
     .single();
+
   if (!data) return { title: 'Газар олдсонгүй' };
-  const meta = data as PlaceMeta;
-  return {
-    title: meta.name,
-    description: meta.short_desc ?? '',
-    openGraph: { images: meta.cover_image ? [meta.cover_image] : [] },
-  };
+  return buildPlaceMetadata(data as Place);
 }
 
 export default async function PlacePage({ params }: PlacePageProps) {
@@ -54,16 +49,32 @@ export default async function PlacePage({ params }: PlacePageProps) {
     profile = data;
   }
 
-  // Use admin client to bypass RLS for view count increment
+  // View count — admin client (RLS bypass)
   const adminClient = createAdminClient();
   (adminClient.rpc as any)('increment_view_count', { place_id: params.id })
     .then(() => {}).catch(() => {});
 
+  // JSON-LD structured data — Google-д газрыг зөв таниулна
+  const placeSchema = buildPlaceSchema(place as Place);
+  const breadcrumbSchema = buildBreadcrumbSchema(place as Place);
+
   return (
-    <PlaceDetailClient
-      place={place as any}
-      initialLiked={likedIds.includes((place as any).id)}
-      profile={profile}
-    />
+    <>
+      {/* Structured Data — Google-д place мэдээлэл дамжуулна */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(placeSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+
+      <PlaceDetailClient
+        place={place as any}
+        initialLiked={likedIds.includes((place as any).id)}
+        profile={profile}
+      />
+    </>
   );
 }
