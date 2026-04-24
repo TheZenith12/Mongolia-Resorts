@@ -29,6 +29,7 @@ export default function BookingChat({ bookingId, currentUserId }: BookingChatPro
     if (res.ok) setMessages(await res.json());
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchMessages(); }, [bookingId]);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 

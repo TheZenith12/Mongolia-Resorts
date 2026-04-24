@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_messages: {
+        Row: {
+          id: string
+          booking_id: string
+          sender_id: string
+          sender_role: string
+          message: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          booking_id: string
+          sender_id: string
+          sender_role: string
+          message: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          booking_id?: string
+          sender_id?: string
+          sender_role?: string
+          message?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           check_in: string

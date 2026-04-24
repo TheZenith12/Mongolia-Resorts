@@ -45,9 +45,8 @@ export default function RoomManager({ placeId }: { placeId: string }) {
   };
   const [form, setForm] = useState<Room>(emptyRoom);
 
-  useEffect(() => {
-    fetchRooms();
-  }, [placeId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchRooms(); }, [placeId]);
 
   async function fetchRooms() {
     const supabase = createClient();
