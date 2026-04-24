@@ -1,6 +1,3 @@
-// app/admin/users/page.tsx
-// REPLACE the entire file with this
-
 import { createAdminClient } from '@/lib/supabase-server';
 import { getCurrentProfile } from '@/lib/actions/auth';
 import { redirect } from 'next/navigation';
@@ -9,11 +6,22 @@ import AdminUserRoleChange from '@/components/admin/AdminUserRoleChange';
 
 async function getUsers() {
   const admin = createAdminClient();
-  // Profiles + тэдний оноогдсон газрыг нэг дор авах
-  const { data: users } = await (admin.from('profiles') as any)
+
+  // Auth users (имэйл агуулна)
+  const { data: { users: authUsers } } = await admin.auth.admin.listUsers();
+
+  // Profiles + оноогдсон газар
+  const { data: profiles } = await (admin.from('profiles') as any)
     .select('*, manager_assigned_place(place_id, places(name))')
     .order('created_at', { ascending: false });
-  return users ?? [];
+
+  // Merge: profile + email
+  const emailMap = new Map(authUsers.map((u) => [u.id, u.email ?? '']));
+
+  return (profiles ?? []).map((p: any) => ({
+    ...p,
+    email: emailMap.get(p.id) ?? '',
+  }));
 }
 
 export default async function AdminUsersPage() {
@@ -44,14 +52,14 @@ export default async function AdminUsersPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-100">
-              {['Хэрэглэгч', 'Утас', 'Эрх', 'Оноогдсон газар', 'Бүртгүүлсэн', 'Тохиргоо'].map(h => (
+              {['Хэрэглэгч', 'И-мэйл', 'Эрх', 'Оноогдсон газар', 'Бүртгүүлсэн', 'Тохиргоо'].map(h => (
                 <th key={h} className="text-left px-5 py-3.5 text-xs font-semibold text-forest-500 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {users.map((user: any) => {
-              const assignedPlace = user.manager_assigned_place?.[0]?.places?.name ?? null;
+              const assignedPlace   = user.manager_assigned_place?.[0]?.places?.name ?? null;
               const assignedPlaceId = user.manager_assigned_place?.[0]?.place_id ?? null;
               return (
                 <tr key={user.id} className="hover:bg-gray-50/40 transition-colors">
@@ -62,11 +70,11 @@ export default async function AdminUsersPage() {
                       </div>
                       <div>
                         <div className="text-sm font-medium text-forest-900">{user.full_name ?? '—'}</div>
-                        <div className="text-xs text-forest-400 font-mono">{user.id.slice(0, 12)}...</div>
+                        <div className="text-xs text-forest-400">{user.phone ?? '—'}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-forest-600">{user.phone ?? '—'}</td>
+                  <td className="px-5 py-4 text-sm text-forest-600 font-mono">{user.email || '—'}</td>
                   <td className="px-5 py-4">
                     <span className={`badge text-xs ${roleColors[user.role] ?? ''}`}>
                       {roleLabels[user.role] ?? user.role}

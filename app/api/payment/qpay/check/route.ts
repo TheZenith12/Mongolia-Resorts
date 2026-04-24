@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase';
+import { createAdminClient } from '@/lib/supabase-server';
 
 async function getQPayToken(): Promise<string> {
   const res = await fetch('https://merchant.qpay.mn/v2/auth/token', {
