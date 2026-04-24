@@ -262,3 +262,79 @@ CREATE POLICY "Users can edit own review"   ON reviews FOR UPDATE USING (user_id
 -- Likes: user manages own
 CREATE POLICY "Users manage own likes" ON likes FOR ALL USING (user_id = auth.uid());
 CREATE POLICY "Anyone reads likes"     ON likes FOR SELECT USING (true);
+
+-- =====================================================
+-- MANAGER ASSIGNED PLACE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS manager_assigned_place (
+  manager_id  UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
+  place_id    UUID NOT NULL REFERENCES places(id) ON DELETE CASCADE,
+  assigned_by UUID REFERENCES profiles(id),
+  assigned_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE manager_assigned_place ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Manager sees own assignment" ON manager_assigned_place FOR SELECT
+  USING (manager_id = auth.uid());
+
+-- =====================================================
+-- BOOKING MESSAGES (Chat)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS booking_messages (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  booking_id  UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  sender_id   UUID NOT NULL REFERENCES profiles(id),
+  sender_role TEXT NOT NULL,
+  message     TEXT NOT NULL,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX booking_messages_booking_idx ON booking_messages(booking_id);
+
+ALTER TABLE booking_messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Booking participants can read messages" ON booking_messages FOR SELECT
+  USING (
+    sender_id = auth.uid()
+    OR EXISTS (SELECT 1 FROM bookings WHERE id = booking_id AND user_id = auth.uid())
+    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('super_admin', 'manager'))
+  );
+CREATE POLICY "Auth users can send messages" ON booking_messages FOR INSERT
+  WITH CHECK (auth.uid() IS NOT NULL);
+
+-- =====================================================
+-- ROOMS
+-- =====================================================
+CREATE TABLE IF NOT EXISTS rooms (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  place_id        UUID NOT NULL REFERENCES places(id) ON DELETE CASCADE,
+  name            TEXT NOT NULL,
+  description     TEXT,
+  price_per_night NUMERIC NOT NULL,
+  capacity        INT NOT NULL DEFAULT 2,
+  quantity        INT NOT NULL DEFAULT 1,
+  cover_image     TEXT,
+  amenities       TEXT[] DEFAULT '{}',
+  is_available    BOOLEAN DEFAULT TRUE,
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX rooms_place_idx ON rooms(place_id);
+
+ALTER TABLE rooms ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can view rooms" ON rooms FOR SELECT USING (true);
+CREATE POLICY "Admin manages rooms"   ON rooms FOR ALL
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('super_admin', 'manager')));
+
+-- =====================================================
+-- RLS RECURSION FIX (profiles)
+-- =====================================================
+DROP POLICY IF EXISTS "Super admin full access" ON profiles;
+
+CREATE OR REPLACE FUNCTION public.get_user_role(user_id UUID)
+RETURNS TEXT AS $$
+  SELECT role FROM public.profiles WHERE id = user_id
+$$ LANGUAGE SQL SECURITY DEFINER STABLE;
+
+CREATE POLICY "Super admin full access" ON profiles FOR ALL
+  USING (public.get_user_role(auth.uid()) = 'super_admin' OR auth.uid() = id);
