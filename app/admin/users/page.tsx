@@ -7,21 +7,29 @@ import AdminUserRoleChange from '@/components/admin/AdminUserRoleChange';
 async function getUsers() {
   const admin = createAdminClient();
 
-  // Auth users (имэйл агуулна)
-  const { data: { users: authUsers } } = await admin.auth.admin.listUsers();
+  // Auth users — бүх бүртгэлтэй хэрэглэгч (service role шаардана)
+  const { data: { users: authUsers } } = await admin.auth.admin.listUsers({ perPage: 1000 });
 
-  // Profiles + оноогдсон газар
+  // Profiles — байж болно, байхгүй байж болно
   const { data: profiles } = await (admin.from('profiles') as any)
     .select('*, manager_assigned_place(place_id, places(name))')
-    .order('created_at', { ascending: false });
+    .in('id', authUsers.map((u) => u.id));
 
-  // Merge: profile + email
-  const emailMap = new Map(authUsers.map((u) => [u.id, u.email ?? '']));
+  const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
 
-  return (profiles ?? []).map((p: any) => ({
-    ...p,
-    email: emailMap.get(p.id) ?? '',
-  }));
+  // Auth user бүрийг профайлтай нэгтгэ — профайл байхгүй бол default утга
+  return authUsers.map((u) => {
+    const profile = profileMap.get(u.id);
+    return {
+      id:         u.id,
+      email:      u.email ?? '',
+      full_name:  profile?.full_name ?? u.user_metadata?.full_name ?? '—',
+      phone:      profile?.phone ?? '—',
+      role:       profile?.role ?? 'user',
+      created_at: u.created_at,
+      manager_assigned_place: profile?.manager_assigned_place ?? [],
+    };
+  });
 }
 
 export default async function AdminUsersPage() {
