@@ -17,13 +17,12 @@ async function getUsers() {
 
   const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
 
-  // Auth user бүрийг профайлтай нэгтгэ — профайл байхгүй бол default утга
   return authUsers.map((u) => {
-    const profile = profileMap.get(u.id);
+    const profile = profileMap.get(u.id) as any;
     return {
       id:         u.id,
       email:      u.email ?? '',
-      full_name:  profile?.full_name ?? u.user_metadata?.full_name ?? '—',
+      full_name:  profile?.full_name ?? (u.user_metadata as any)?.full_name ?? '—',
       phone:      profile?.phone ?? '—',
       role:       profile?.role ?? 'user',
       created_at: u.created_at,
