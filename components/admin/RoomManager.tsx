@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Save, X, Edit2, Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase';
 import { formatPrice } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
 import { ImageUpload } from './ImageUpload';
+import { getRooms, createRoom, updateRoom, deleteRoom } from '@/lib/actions/rooms';
 
 interface Room {
   id?: string;
@@ -33,31 +33,30 @@ export default function RoomManager({ placeId }: { placeId: string }) {
   const [saving, setSaving] = useState(false);
 
   const emptyRoom: Room = {
-    place_id:       placeId,
-    name:           '',
-    description:    '',
+    place_id:        placeId,
+    name:            '',
+    description:     '',
     price_per_night: 0,
-    capacity:       2,
-    quantity:       1,
-    cover_image:    '',
-    amenities:      [],
-    is_available:   true,
+    capacity:        2,
+    quantity:        1,
+    cover_image:     '',
+    amenities:       [],
+    is_available:    true,
   };
   const [form, setForm] = useState<Room>(emptyRoom);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { fetchRooms(); }, [placeId]);
+  const fetchRooms = useCallback(async () => {
+    try {
+      const data = await getRooms(placeId);
+      setRooms(data as Room[]);
+    } catch (err: any) {
+      toast.error(err.message ?? 'Өрөө ачаалж чадсангүй');
+    } finally {
+      setLoading(false);
+    }
+  }, [placeId]);
 
-  async function fetchRooms() {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from('rooms')
-      .select('*')
-      .eq('place_id', placeId)
-      .order('price_per_night', { ascending: true });
-    setRooms((data ?? []) as Room[]);
-    setLoading(false);
-  }
+  useEffect(() => { fetchRooms(); }, [fetchRooms]);
 
   function setField(key: keyof Room, value: any) {
     setForm(f => ({ ...f, [key]: value }));
@@ -94,44 +93,44 @@ export default function RoomManager({ placeId }: { placeId: string }) {
     if (!form.name) { toast.error('Өрөөний нэр оруулна уу'); return; }
     if (!form.price_per_night) { toast.error('Үнэ оруулна уу'); return; }
     setSaving(true);
-    const supabase = createClient();
     try {
       const payload = {
-        place_id:       placeId,
-        name:           form.name,
-        description:    form.description,
+        place_id:        placeId,
+        name:            form.name,
+        description:     form.description || undefined,
         price_per_night: Number(form.price_per_night),
-        capacity:       Number(form.capacity),
-        quantity:       Number(form.quantity),
-        cover_image:    form.cover_image,
-        amenities:      form.amenities,
-        is_available:   form.is_available,
-        updated_at:     new Date().toISOString(),
+        capacity:        Number(form.capacity),
+        quantity:        Number(form.quantity),
+        cover_image:     form.cover_image || undefined,
+        amenities:       form.amenities,
+        is_available:    form.is_available,
       };
+
       if (editing) {
-        const { error } = await (supabase.from('rooms') as any).update(payload).eq('id', editing);
-        if (error) throw error;
+        await updateRoom(editing, placeId, payload);
         toast.success('Өрөө шинэчлэгдлээ!');
       } else {
-        const { error } = await (supabase.from('rooms') as any).insert(payload);
-        if (error) throw error;
+        await createRoom(payload);
         toast.success('Өрөө нэмэгдлээ!');
       }
       await fetchRooms();
       cancelForm();
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message ?? 'Алдаа гарлаа');
     } finally {
       setSaving(false);
     }
   }
 
-  async function deleteRoom(id: string) {
+  async function handleDelete(id: string) {
     if (!confirm('Өрөөг устгах уу?')) return;
-    const supabase = createClient();
-    await supabase.from('rooms').delete().eq('id', id);
-    toast.success('Өрөө устгагдлаа');
-    fetchRooms();
+    try {
+      await deleteRoom(id, placeId);
+      toast.success('Өрөө устгагдлаа');
+      await fetchRooms();
+    } catch (err: any) {
+      toast.error(err.message ?? 'Устгаж чадсангүй');
+    }
   }
 
   if (loading) return (
@@ -263,6 +262,7 @@ export default function RoomManager({ placeId }: { placeId: string }) {
                     <div className="font-semibold text-forest-900 text-sm">{room.name}</div>
                     <div className="text-xs text-forest-500 mt-0.5">
                       👥 {room.capacity} хүн · 🏨 {room.quantity} өрөө
+                      {!room.is_available && <span className="ml-2 text-red-400">● Хаалттай</span>}
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
@@ -289,7 +289,7 @@ export default function RoomManager({ placeId }: { placeId: string }) {
                   className="p-2 rounded-lg hover:bg-forest-50 text-forest-400 hover:text-forest-600 transition-colors">
                   <Edit2 size={14} />
                 </button>
-                <button type="button" onClick={() => deleteRoom(room.id!)}
+                <button type="button" onClick={() => handleDelete(room.id!)}
                   className="p-2 rounded-lg hover:bg-red-50 text-forest-400 hover:text-red-500 transition-colors">
                   <Trash2 size={14} />
                 </button>
