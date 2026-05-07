@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Save, Eye, Building2, Leaf } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { MONGOLIAN_PROVINCES } from '@/lib/types';
-import { createClient } from '@/lib/supabase';
+import { createPlace, updatePlace } from '@/lib/actions/places';
 import { ImageUpload, MultiImageUpload, VideoUpload } from './ImageUpload';
 import RoomManager from './RoomManager';
 
@@ -44,7 +44,6 @@ export default function PlaceForm({ place, mode }: { place?: any; mode: 'create'
     if (!form.name.trim()) { toast.error('Нэр оруулна уу'); return; }
     setLoading(true);
     try {
-      const supabase = createClient();
       const payload = {
         type,
         name:            form.name,
@@ -64,16 +63,13 @@ export default function PlaceForm({ place, mode }: { place?: any; mode: 'create'
         video_url:       videoUrl || null,
         is_published:    isPublished,
         is_featured:     isFeatured,
-        updated_at:      new Date().toISOString(),
-      };
+      } as any;
 
       if (mode === 'create') {
-        const { error } = await (supabase.from('places') as any).insert(payload);
-        if (error) throw error;
+        await createPlace(payload);
         toast.success('Газар амжилттай нэмэгдлээ!');
       } else {
-        const { error } = await (supabase.from('places') as any).update(payload).eq('id', place.id);
-        if (error) throw error;
+        await updatePlace(place.id, payload);
         toast.success('Мэдээлэл шинэчлэгдлээ!');
       }
       router.push('/admin/places');
