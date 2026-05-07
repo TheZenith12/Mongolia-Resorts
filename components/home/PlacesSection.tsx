@@ -10,6 +10,7 @@ interface PlacesSectionProps {
     province?: string;
     minPrice?: string;
     maxPrice?: string;
+    minRating?: string;
     page?: string;
     sort?: string;
   };
@@ -25,6 +26,7 @@ export default async function PlacesSection({ searchParams }: PlacesSectionProps
       province:  searchParams.province,
       minPrice:  searchParams.minPrice ? parseFloat(searchParams.minPrice) : undefined,
       maxPrice:  searchParams.maxPrice ? parseFloat(searchParams.maxPrice) : undefined,
+      minRating: searchParams.minRating ? parseFloat(searchParams.minRating) : undefined,
       page,
       pageSize:  12,
       sortBy:    (searchParams.sort as 'created_at' | 'price_per_night' | 'rating_avg' | 'view_count') ?? 'created_at',
@@ -59,7 +61,7 @@ export default async function PlacesSection({ searchParams }: PlacesSectionProps
   }
 
   return (
-    <section className="page-container py-16">
+    <section>
       <div className="flex items-end justify-between mb-8">
         <div>
           <h2 className="section-title">

@@ -55,11 +55,42 @@ export default function BookingChat({ bookingId, currentUserId }: BookingChatPro
     user: 'Хэрэглэгч',
   };
 
+  const TEMPLATES = [
+    'Таны захиалгыг баталгаажууллаа. Тавтай морилно уу! 🏕',
+    'Та хэзээ ирэх вэ? Бид бэлэн байна.',
+    'Захиалгын мэдээллийг баталгаажуулна уу: огноо, зочдын тоо.',
+    'Аялал сайхан болтугай! Дахиад ирнэ үү 🙏',
+    'Асуух зүйл байвал бидэнтэй холбогдоорой.',
+  ];
+  const [showTemplates, setShowTemplates] = useState(false);
+
   return (
-    <div className="flex flex-col h-80 border border-gray-100 rounded-xl overflow-hidden bg-gray-50">
-      <div className="px-4 py-2.5 bg-white border-b border-gray-100 text-xs font-semibold text-forest-600">
-        Захиалгын мессеж
+    <div className="flex flex-col h-96 border border-gray-100 rounded-xl overflow-hidden bg-gray-50">
+      <div className="px-4 py-2.5 bg-white border-b border-gray-100 flex items-center justify-between">
+        <span className="text-xs font-semibold text-forest-600">Захиалгын мессеж</span>
+        <button
+          onClick={() => setShowTemplates(!showTemplates)}
+          className="text-xs text-forest-400 hover:text-forest-600 transition-colors"
+        >
+          {showTemplates ? 'Хаах' : '⚡ Загвар'}
+        </button>
       </div>
+
+      {/* Template quick-replies */}
+      {showTemplates && (
+        <div className="bg-white border-b border-gray-100 px-3 py-2 flex flex-wrap gap-1.5">
+          {TEMPLATES.map((t, i) => (
+            <button
+              key={i}
+              onClick={() => { setText(t); setShowTemplates(false); }}
+              className="text-xs px-2.5 py-1 bg-forest-50 text-forest-600 rounded-lg hover:bg-forest-100 transition-colors text-left max-w-full truncate"
+              style={{ maxWidth: '200px' }}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 && (

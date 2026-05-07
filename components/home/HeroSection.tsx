@@ -6,6 +6,7 @@ import { Search, MapPin, DollarSign, Tent, Trees, ChevronDown } from 'lucide-rea
 import { MONGOLIAN_PROVINCES } from '@/lib/types';
 import type { SiteStats } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import SearchAutocomplete from '@/components/search/SearchAutocomplete';
 
 interface HeroSectionProps {
   stats: SiteStats;
@@ -95,16 +96,21 @@ export default function HeroSection({ stats }: HeroSectionProps) {
 
             <form onSubmit={handleSearch}>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-                {/* Name search */}
-                <div className="relative sm:col-span-1">
-                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-forest-400" />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Нэрээр хайх..."
-                    className="w-full pl-10 pr-4 py-3 bg-white rounded-xl text-sm text-forest-900 placeholder-forest-400 focus:outline-none focus:ring-2 focus:ring-forest-400/40"
-                  />
-                </div>
+                {/* Name search — autocomplete */}
+                <SearchAutocomplete
+                  value={search}
+                  onChange={setSearch}
+                  onSearch={() => {
+                    const params = new URLSearchParams();
+                    if (search) params.set('search', search);
+                    if (type !== 'all') params.set('type', type);
+                    if (province) params.set('province', province);
+                    if (minPrice) params.set('minPrice', minPrice);
+                    if (maxPrice) params.set('maxPrice', maxPrice);
+                    router.push(`/places?${params.toString()}`);
+                  }}
+                  className="sm:col-span-1"
+                />
 
                 {/* Province */}
                 <div className="relative">

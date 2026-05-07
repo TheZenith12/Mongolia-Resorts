@@ -118,17 +118,102 @@ export async function getUserBookings(): Promise<Booking[]> {
   }
 }
 
-export async function cancelBooking(id: string): Promise<void> {
+export async function cancelBooking(id: string): Promise<{ refunded: boolean }> {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Нэвтрэх шаардлагатай');
-  const { error } = await (supabase
-    .from('bookings') as any)
-    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+
+  const { data: booking } = await (supabase.from('bookings') as any)
+    .select('status, payment_status, payment_method, payment_intent, total_amount')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (!booking) throw new Error('Захиалга олдсонгүй');
+  if (booking.status === 'cancelled') throw new Error('Захиалга аль хэдийн цуцлагдсан байна');
+  if (booking.status === 'completed') throw new Error('Дууссан захиалгыг цуцлах боломжгүй');
+
+  let refunded = false;
+
+  if (booking.payment_status === 'paid' && booking.payment_method === 'stripe' && booking.payment_intent) {
+    const Stripe = (await import('stripe')).default;
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' });
+    try {
+      await stripe.refunds.create({ payment_intent: booking.payment_intent });
+      refunded = true;
+    } catch {
+      // Stripe refund failed — still cancel the booking, admin can handle manually
+    }
+  }
+
+  const { error } = await (supabase.from('bookings') as any)
+    .update({
+      status: 'cancelled',
+      payment_status: refunded ? 'refunded' : booking.payment_status,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', id)
     .eq('user_id', user.id);
+
   if (error) throw new Error(error.message);
   revalidatePath('/profile/bookings');
+  return { refunded };
+}
+
+export async function getBookedDateRanges(
+  placeId: string,
+  roomId?: string
+): Promise<Array<{ check_in: string; check_out: string }>> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const today = new Date().toISOString().split('T')[0];
+
+    let bookingQuery = (supabase.from('bookings') as any)
+      .select('check_in, check_out')
+      .eq('place_id', placeId)
+      .in('status', ['pending', 'confirmed'])
+      .gte('check_out', today);
+    if (roomId) bookingQuery = bookingQuery.eq('room_id', roomId);
+
+    // Also fetch manager-blocked dates
+    const [bookingRes, blocksRes] = await Promise.all([
+      bookingQuery,
+      (supabase.from('availability_blocks') as any)
+        .select('start_date, end_date')
+        .eq('place_id', placeId)
+        .gte('end_date', today)
+        .catch(() => ({ data: [] })),
+    ]);
+
+    const booked = (bookingRes.data ?? []) as Array<{ check_in: string; check_out: string }>;
+    const blocked = ((blocksRes as any).data ?? []).map((b: any) => ({
+      check_in: b.start_date,
+      check_out: b.end_date,
+    }));
+
+    return [...booked, ...blocked];
+  } catch {
+    return [];
+  }
+}
+
+export async function updateProfile(data: {
+  full_name: string;
+  phone: string;
+  avatar_url?: string;
+}): Promise<void> {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Нэвтрэх шаардлагатай');
+
+  const { error } = await (supabase
+    .from('profiles') as any)
+    .update({ ...data, updated_at: new Date().toISOString() })
+    .eq('id', user.id);
+
+  if (error) throw new Error(error.message);
+  revalidatePath('/profile/bookings');
+  revalidatePath('/profile/edit');
 }
 
 // ── Likes ─────────────────────────────────────────────────────────────────────

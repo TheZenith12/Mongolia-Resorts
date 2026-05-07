@@ -161,6 +161,7 @@ export interface PlacesFilter {
   province?: string;
   minPrice?: number;
   maxPrice?: number;
+  minRating?: number;
   page?: number;
   pageSize?: number;
   sortBy?: 'created_at' | 'price_per_night' | 'rating_avg' | 'view_count';

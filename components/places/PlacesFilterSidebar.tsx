@@ -8,33 +8,44 @@ import { cn } from '@/lib/utils';
 
 interface PlacesFilterSidebarProps {
   current: {
-    type?: string; province?: string; minPrice?: string; maxPrice?: string; search?: string;
+    type?: string; province?: string; minPrice?: string; maxPrice?: string;
+    minRating?: string; search?: string;
   };
 }
 
+const RATING_OPTIONS = [
+  { value: '',    label: 'Бүгд' },
+  { value: '4',   label: '4+ ⭐' },
+  { value: '3',   label: '3+ ⭐' },
+  { value: '2',   label: '2+ ⭐' },
+];
+
 export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProps) {
   const router = useRouter();
-  const [type, setType] = useState(current.type ?? '');
-  const [province, setProvince] = useState(current.province ?? '');
-  const [minPrice, setMinPrice] = useState(current.minPrice ?? '');
-  const [maxPrice, setMaxPrice] = useState(current.maxPrice ?? '');
+  const [type, setType]           = useState(current.type ?? '');
+  const [province, setProvince]   = useState(current.province ?? '');
+  const [minPrice, setMinPrice]   = useState(current.minPrice ?? '');
+  const [maxPrice, setMaxPrice]   = useState(current.maxPrice ?? '');
+  const [minRating, setMinRating] = useState(current.minRating ?? '');
   const [priceOpen, setPriceOpen] = useState(true);
-  const [provOpen, setProvOpen] = useState(true);
+  const [provOpen, setProvOpen]   = useState(true);
+  const [ratingOpen, setRatingOpen] = useState(true);
 
-  const activeCount = [type, province, minPrice, maxPrice].filter(Boolean).length;
+  const activeCount = [type, province, minPrice, maxPrice, minRating].filter(Boolean).length;
 
   function apply() {
     const params = new URLSearchParams();
-    if (type)     params.set('type', type);
-    if (province) params.set('province', province);
-    if (minPrice) params.set('minPrice', minPrice);
-    if (maxPrice) params.set('maxPrice', maxPrice);
+    if (type)      params.set('type', type);
+    if (province)  params.set('province', province);
+    if (minPrice)  params.set('minPrice', minPrice);
+    if (maxPrice)  params.set('maxPrice', maxPrice);
+    if (minRating) params.set('minRating', minRating);
     if (current.search) params.set('search', current.search);
     router.push(`/places?${params.toString()}`);
   }
 
   function reset() {
-    setType(''); setProvince(''); setMinPrice(''); setMaxPrice('');
+    setType(''); setProvince(''); setMinPrice(''); setMaxPrice(''); setMinRating('');
     router.push('/places');
   }
 
@@ -104,6 +115,35 @@ export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProp
               <option key={p} value={p}>{p}</option>
             ))}
           </select>
+        )}
+      </div>
+
+      {/* Rating filter */}
+      <div className="mb-5 border-t border-forest-100 pt-5">
+        <button
+          onClick={() => setRatingOpen(!ratingOpen)}
+          className="w-full flex items-center justify-between text-xs font-semibold text-forest-500 uppercase tracking-wide mb-2.5"
+        >
+          Үнэлгээ
+          {ratingOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+        {ratingOpen && (
+          <div className="space-y-1.5">
+            {RATING_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setMinRating(opt.value)}
+                className={cn(
+                  'w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-left transition-all',
+                  minRating === opt.value
+                    ? 'bg-amber-500 text-white font-medium'
+                    : 'text-forest-600 hover:bg-forest-50'
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         )}
       </div>
 

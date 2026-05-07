@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import PlacesSection from '@/components/home/PlacesSection';
+import PlacesFilterSidebar from '@/components/places/PlacesFilterSidebar';
 import { PlaceCardSkeleton } from '@/components/places/PlaceCard';
 
 const BASE_URL = 'https://mongolia-reso.vercel.app/';
@@ -12,6 +13,7 @@ interface PlacesPageProps {
     province?: string;
     minPrice?: string;
     maxPrice?: string;
+    minRating?: string;
     page?: string;
     sort?: string;
   };
@@ -72,8 +74,29 @@ function PlacesSkeleton() {
 
 export default function PlacesPage({ searchParams }: PlacesPageProps) {
   return (
-    <Suspense fallback={<PlacesSkeleton />}>
-      <PlacesSection searchParams={searchParams} />
-    </Suspense>
+    <div className="page-container py-12">
+      <div className="flex gap-8 items-start">
+        {/* Sidebar */}
+        <aside className="hidden lg:block w-64 flex-shrink-0">
+          <PlacesFilterSidebar
+            current={{
+              type:      searchParams.type,
+              province:  searchParams.province,
+              minPrice:  searchParams.minPrice,
+              maxPrice:  searchParams.maxPrice,
+              minRating: searchParams.minRating,
+              search:    searchParams.search,
+            }}
+          />
+        </aside>
+
+        {/* Main content */}
+        <div className="flex-1 min-w-0">
+          <Suspense fallback={<PlacesSkeleton />}>
+            <PlacesSection searchParams={searchParams} />
+          </Suspense>
+        </div>
+      </div>
+    </div>
   );
 }

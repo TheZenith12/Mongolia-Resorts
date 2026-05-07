@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase-server';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 import PlaceDetailClient from '@/components/places/PlaceDetailClient';
 import { buildPlaceMetadata, buildPlaceSchema, buildBreadcrumbSchema } from '@/lib/seo';
+import { getSimilarPlaces } from '@/lib/actions/places';
 import type { Place } from '@/lib/types';
 
 interface PlacePageProps {
@@ -49,10 +50,14 @@ export default async function PlacePage({ params }: PlacePageProps) {
     profile = data;
   }
 
-  // View count — admin client (RLS bypass)
-  const adminClient = createAdminClient();
-  (adminClient.rpc as any)('increment_view_count', { place_id: params.id })
-    .then(() => {}).catch(() => {});
+  const similarPlaces = await getSimilarPlaces(
+    params.id,
+    (place as any).type,
+    (place as any).province,
+    4
+  ).catch(() => []);
+
+  // View count is tracked client-side via /api/places/view (see PlaceDetailClient)
 
   // JSON-LD structured data — Google-д газрыг зөв таниулна
   const placeSchema = buildPlaceSchema(place as Place);
@@ -74,6 +79,7 @@ export default async function PlacePage({ params }: PlacePageProps) {
         place={place as any}
         initialLiked={likedIds.includes((place as any).id)}
         profile={profile}
+        similarPlaces={similarPlaces}
       />
     </>
   );

@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { formatDate, formatPrice } from '@/lib/utils';
+import { formatPrice } from '@/lib/utils';
 import BookingChat from './BookingChat';
-import { MessageCircle, X } from 'lucide-react';
+import { MessageCircle, X, Check, CheckCheck, Ban, ChevronDown } from 'lucide-react';
+import { updateBookingStatus } from '@/lib/actions/places';
+import { toast } from 'react-hot-toast';
 
 interface AdminBookingsClientProps {
   bookings: any[];
@@ -24,8 +26,65 @@ const paymentColors: Record<string, string> = {
   refunded: 'bg-gray-50 text-gray-600',
 };
 
-export default function AdminBookingsClient({ bookings, currentUserId }: AdminBookingsClientProps) {
+function BookingStatusActions({ booking, onUpdate }: { booking: any; onUpdate: (id: string, status: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  if (booking.status === 'cancelled' || booking.status === 'completed') return null;
+
+  const actions = [
+    booking.status !== 'confirmed'  && { status: 'confirmed',  label: 'Батлах',   icon: <Check size={12} />,      cls: 'text-green-600 hover:bg-green-50' },
+    booking.status === 'confirmed'  && { status: 'completed',  label: 'Дуусгах',  icon: <CheckCheck size={12} />, cls: 'text-blue-600 hover:bg-blue-50' },
+    { status: 'cancelled', label: 'Цуцлах', icon: <Ban size={12} />, cls: 'text-red-600 hover:bg-red-50' },
+  ].filter(Boolean) as Array<{ status: string; label: string; icon: React.ReactNode; cls: string }>;
+
+  async function handle(status: string) {
+    setLoading(true);
+    setOpen(false);
+    try {
+      await updateBookingStatus(booking.id, status as 'confirmed' | 'cancelled' | 'completed');
+      onUpdate(booking.id, status);
+      toast.success(`Захиалга ${status === 'confirmed' ? 'батлагдлаа' : status === 'completed' ? 'дуусгагдлаа' : 'цуцлагдлаа'}`);
+    } catch (err: any) {
+      toast.error(err.message ?? 'Алдаа гарлаа');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        disabled={loading}
+        className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-forest-50 text-forest-600 hover:bg-forest-100 transition-colors disabled:opacity-50"
+      >
+        Үйлдэл <ChevronDown size={11} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-xl border border-gray-100 shadow-lg z-20 py-1">
+          {actions.map(a => (
+            <button
+              key={a.status}
+              onClick={() => handle(a.status)}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors ${a.cls}`}
+            >
+              {a.icon} {a.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function AdminBookingsClient({ bookings: initialBookings, currentUserId }: AdminBookingsClientProps) {
   const [chatBooking, setChatBooking] = useState<any | null>(null);
+  const [bookings, setBookings] = useState<any[]>(initialBookings);
+
+  function handleStatusUpdate(id: string, status: string) {
+    setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b));
+  }
 
   return (
     <div>
@@ -38,7 +97,7 @@ export default function AdminBookingsClient({ bookings, currentUserId }: AdminBo
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-100">
-              {['Зочин', 'Газар', 'Огноо', 'Дүн', 'Төлбөр', 'Статус', 'Чат'].map(h => (
+              {['Зочин', 'Газар', 'Огноо', 'Дүн', 'Төлбөр', 'Статус', 'Үйлдэл', 'Чат'].map(h => (
                 <th key={h} className="text-left px-5 py-3.5 text-xs font-semibold text-forest-500 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
@@ -67,6 +126,9 @@ export default function AdminBookingsClient({ bookings, currentUserId }: AdminBo
                   <span className={`badge text-xs ${statusColors[b.status] ?? ''}`}>
                     {b.status}
                   </span>
+                </td>
+                <td className="px-5 py-4">
+                  <BookingStatusActions booking={b} onUpdate={handleStatusUpdate} />
                 </td>
                 <td className="px-5 py-4">
                   <button
