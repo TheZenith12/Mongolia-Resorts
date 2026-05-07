@@ -1,37 +1,36 @@
-// app/admin/page.tsx
-// REPLACE the entire file
-
-import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase-server';
+import { createAdminClient } from '@/lib/supabase-server';
 import { getCurrentProfile } from '@/lib/actions/auth';
-import { CalendarCheck, Star, Eye, DollarSign, MapPin } from 'lucide-react';
-import { formatPrice } from '@/lib/utils';
+import { CalendarCheck, Star, Eye, DollarSign, MapPin, TrendingUp, Users, Clock } from 'lucide-react';
+import { formatPrice, formatDate } from '@/lib/utils';
+import Link from 'next/link';
 
-async function getDashboardStats(role: string, userId: string) {
+async function getDashboardData(role: string, userId: string) {
   try {
     const admin = createAdminClient();
 
     if (role === 'super_admin') {
       const [placesRes, bookingsRes, reviewsRes] = await Promise.all([
         admin.from('places').select('id, type, view_count, is_published', { count: 'exact' }),
-        (admin.from('bookings') as any).select('total_amount, payment_status', { count: 'exact' }),
+        (admin.from('bookings') as any).select('total_amount, payment_status, created_at, status'),
         (admin.from('reviews') as any).select('id', { count: 'exact' }),
       ]);
 
       const places = placesRes.data ?? [];
       const bookings = bookingsRes.data ?? [];
       const paidBookings = bookings.filter((b: any) => b.payment_status === 'paid');
-      const totalRevenue = paidBookings.reduce((a: number, b: any) => a + b.total_amount, 0);
 
       return {
-        isManager: false,
-        placeName: null,
+        isManager: false, placeName: null, assignedPlaceId: null,
         places: placesRes.count ?? 0,
         publishedPlaces: places.filter((p: any) => p.is_published).length,
-        bookings: bookingsRes.count ?? 0,
+        bookings: bookings.length,
         paidBookings: paidBookings.length,
-        totalRevenue,
+        totalRevenue: paidBookings.reduce((a: number, b: any) => a + b.total_amount, 0),
         reviews: reviewsRes.count ?? 0,
         totalViews: places.reduce((a: number, p: any) => a + (p.view_count ?? 0), 0),
+        monthlyRevenue: getMonthlyRevenue(paidBookings),
+        recentBookings: [],
+        occupancyRate: null,
       };
     }
 
@@ -43,66 +42,154 @@ async function getDashboardStats(role: string, userId: string) {
 
     if (!assignment) {
       return {
-        isManager: true, placeName: null,
+        isManager: true, placeName: null, assignedPlaceId: null,
         places: 0, publishedPlaces: 0, bookings: 0,
         paidBookings: 0, totalRevenue: 0, reviews: 0, totalViews: 0,
+        monthlyRevenue: [], recentBookings: [], occupancyRate: null,
       };
     }
 
     const placeId = assignment.place_id;
-    const [bookingsRes, reviewsRes] = await Promise.all([
-      (admin.from('bookings') as any).select('total_amount, payment_status', { count: 'exact' }).eq('place_id', placeId),
+
+    const [bookingsRes, reviewsRes, recentRes] = await Promise.all([
+      (admin.from('bookings') as any)
+        .select('total_amount, payment_status, created_at, status, check_in, check_out')
+        .eq('place_id', placeId),
       (admin.from('reviews') as any).select('id', { count: 'exact' }).eq('place_id', placeId),
+      (admin.from('bookings') as any)
+        .select('id, guest_name, guest_phone, check_in, check_out, status, payment_status, total_amount')
+        .eq('place_id', placeId)
+        .order('created_at', { ascending: false })
+        .limit(5),
     ]);
 
     const bookings = bookingsRes.data ?? [];
     const paidBookings = bookings.filter((b: any) => b.payment_status === 'paid');
+    const confirmedBookings = bookings.filter((b: any) => b.status === 'confirmed' || b.status === 'pending');
+
+    // Occupancy: last 30 days ямар хоног захиалагдсан
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    let bookedDays = 0;
+    confirmedBookings.forEach((b: any) => {
+      const cin = new Date(b.check_in);
+      const cout = new Date(b.check_out);
+      const start = cin < thirtyDaysAgo ? thirtyDaysAgo : cin;
+      const end = cout > today ? today : cout;
+      if (end > start) {
+        bookedDays += Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      }
+    });
+    const occupancyRate = Math.min(100, Math.round((bookedDays / 30) * 100));
 
     return {
       isManager: true,
       placeName: assignment.places?.name ?? null,
-      places: 1,
-      publishedPlaces: 1,
-      bookings: bookingsRes.count ?? 0,
+      assignedPlaceId: placeId,
+      places: 1, publishedPlaces: 1,
+      bookings: bookings.length,
       paidBookings: paidBookings.length,
       totalRevenue: paidBookings.reduce((a: number, b: any) => a + b.total_amount, 0),
       reviews: reviewsRes.count ?? 0,
       totalViews: assignment.places?.view_count ?? 0,
+      monthlyRevenue: getMonthlyRevenue(paidBookings),
+      recentBookings: recentRes.data ?? [],
+      occupancyRate,
     };
   } catch {
     return {
-      isManager: false, placeName: null,
+      isManager: false, placeName: null, assignedPlaceId: null,
       places: 0, publishedPlaces: 0, bookings: 0,
       paidBookings: 0, totalRevenue: 0, reviews: 0, totalViews: 0,
+      monthlyRevenue: [], recentBookings: [], occupancyRate: null,
     };
   }
 }
+
+function getMonthlyRevenue(paidBookings: any[]): Array<{ month: string; revenue: number }> {
+  const months: Record<string, number> = {};
+  const now = new Date();
+
+  // Last 6 months seed
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    months[key] = 0;
+  }
+
+  paidBookings.forEach((b: any) => {
+    const d = new Date(b.created_at);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (months[key] !== undefined) months[key] += b.total_amount;
+  });
+
+  const MN_MONTHS = ['1-р сар','2-р сар','3-р сар','4-р сар','5-р сар','6-р сар','7-р сар','8-р сар','9-р сар','10-р сар','11-р сар','12-р сар'];
+  return Object.entries(months).map(([key, revenue]) => ({
+    month: MN_MONTHS[parseInt(key.split('-')[1]) - 1],
+    revenue,
+  }));
+}
+
+function RevenueChart({ data }: { data: Array<{ month: string; revenue: number }> }) {
+  const max = Math.max(...data.map(d => d.revenue), 1);
+  return (
+    <div className="flex items-end gap-2 h-32 pt-4">
+      {data.map((d, i) => {
+        const heightPct = (d.revenue / max) * 100;
+        return (
+          <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group">
+            <div className="relative w-full flex items-end justify-center" style={{ height: '96px' }}>
+              <div
+                className="w-full bg-forest-600 rounded-t-lg transition-all duration-500 group-hover:bg-forest-500"
+                style={{ height: `${Math.max(heightPct, 2)}%` }}
+              />
+              {d.revenue > 0 && (
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-forest-500 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                  {formatPrice(d.revenue)}
+                </div>
+              )}
+            </div>
+            <span className="text-[9px] text-forest-400 text-center leading-tight">{d.month}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const statusColors: Record<string, string> = {
+  pending:   'bg-yellow-50 text-yellow-700',
+  confirmed: 'bg-green-50 text-green-700',
+  cancelled: 'bg-red-50 text-red-600',
+  completed: 'bg-blue-50 text-blue-700',
+};
+const statusLabels: Record<string, string> = {
+  pending: 'Хүлээгдэж буй', confirmed: 'Батлагдсан', cancelled: 'Цуцлагдсан', completed: 'Дууссан',
+};
 
 export default async function AdminDashboard() {
   const profileRaw = await getCurrentProfile();
   if (!profileRaw) return null;
   const profile = profileRaw as any;
+  const stats = await getDashboardData(profile.role, profile.id as string);
 
-  const role = profile.role;
-  const stats = await getDashboardStats(role, profile.id as string);
-
-  const cards = stats.isManager
+  const statCards = stats.isManager
     ? [
-        { label: 'Нийт захиалга', value: stats.bookings,                    icon: CalendarCheck, color: 'bg-blue-500' },
-        { label: 'Орлого',        value: formatPrice(stats.totalRevenue),   icon: DollarSign,    color: 'bg-green-500' },
-        { label: 'Сэтгэгдэл',     value: stats.reviews,                     icon: Star,          color: 'bg-amber-500' },
-        { label: 'Үзэлт',         value: stats.totalViews,                  icon: Eye,           color: 'bg-purple-500' },
+        { label: 'Нийт захиалга',  value: stats.bookings,                  icon: CalendarCheck, color: 'bg-blue-500' },
+        { label: 'Орлого',          value: formatPrice(stats.totalRevenue),  icon: DollarSign,    color: 'bg-green-500' },
+        { label: 'Сэтгэгдэл',       value: stats.reviews,                   icon: Star,          color: 'bg-amber-500' },
+        { label: 'Үзэлт',           value: stats.totalViews,                icon: Eye,           color: 'bg-purple-500' },
       ]
     : [
-        { label: 'Нийт газар',    value: stats.places,                      icon: MapPin,        color: 'bg-forest-600' },
-        { label: 'Нийт захиалга', value: stats.bookings,                    icon: CalendarCheck, color: 'bg-blue-500' },
-        { label: 'Нийт орлого',   value: formatPrice(stats.totalRevenue),   icon: DollarSign,    color: 'bg-green-500' },
-        { label: 'Сэтгэгдэл',     value: stats.reviews,                     icon: Star,          color: 'bg-amber-500' },
+        { label: 'Нийт газар',      value: stats.places,                    icon: MapPin,        color: 'bg-forest-600' },
+        { label: 'Нийт захиалга',   value: stats.bookings,                  icon: CalendarCheck, color: 'bg-blue-500' },
+        { label: 'Нийт орлого',     value: formatPrice(stats.totalRevenue),  icon: DollarSign,    color: 'bg-green-500' },
+        { label: 'Сэтгэгдэл',       value: stats.reviews,                   icon: Star,          color: 'bg-amber-500' },
       ];
 
   return (
-    <div>
-      <div className="mb-6">
+    <div className="space-y-6">
+      <div>
         <h1 className="font-display text-3xl font-semibold text-forest-900">
           {stats.isManager && stats.placeName ? `${stats.placeName} — Самбар` : 'Самбар'}
         </h1>
@@ -111,8 +198,9 @@ export default async function AdminDashboard() {
         </p>
       </div>
 
+      {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {cards.map((card) => {
+        {statCards.map((card) => {
           const Icon = card.icon;
           return (
             <div key={card.label} className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -125,6 +213,96 @@ export default async function AdminDashboard() {
           );
         })}
       </div>
+
+      {/* Manager-specific extra info */}
+      {stats.isManager && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+          {/* Monthly revenue chart */}
+          {stats.monthlyRevenue.length > 0 && (
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="font-semibold text-forest-900 flex items-center gap-2">
+                  <TrendingUp size={16} className="text-forest-500" /> Сарын орлого
+                </h2>
+                <span className="text-xs text-forest-400">Сүүлийн 6 сар</span>
+              </div>
+              <RevenueChart data={stats.monthlyRevenue} />
+            </div>
+          )}
+
+          {/* Occupancy + quick links */}
+          <div className="space-y-4">
+            {/* Occupancy rate */}
+            {stats.occupancyRate !== null && (
+              <div className="bg-white rounded-2xl border border-gray-100 p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users size={15} className="text-forest-500" />
+                  <span className="text-sm font-semibold text-forest-900">Дүүргэлт (30 хоног)</span>
+                </div>
+                <div className="text-3xl font-bold text-forest-900 mb-2">{stats.occupancyRate}%</div>
+                <div className="w-full bg-forest-100 rounded-full h-2">
+                  <div
+                    className="bg-forest-600 h-2 rounded-full transition-all duration-700"
+                    style={{ width: `${stats.occupancyRate}%` }}
+                  />
+                </div>
+                <p className="text-xs text-forest-400 mt-2">Сүүлийн 30 хоногт</p>
+              </div>
+            )}
+
+            {/* Quick links */}
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-2">
+              <p className="text-xs font-semibold text-forest-500 uppercase tracking-wide mb-3">Хурдан холбоос</p>
+              {[
+                { href: '/admin/bookings',    label: 'Захиалгууд харах',    icon: CalendarCheck },
+                { href: '/admin/availability', label: 'Огноо блоклох',      icon: Clock },
+                { href: '/admin/reviews',      label: 'Сэтгэгдлүүд',        icon: Star },
+              ].map(l => (
+                <Link key={l.href} href={l.href}
+                  className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-forest-50 text-sm text-forest-700 transition-colors">
+                  <l.icon size={14} className="text-forest-400" /> {l.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recent bookings — manager only */}
+      {stats.isManager && stats.recentBookings.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <h2 className="font-semibold text-forest-900">Сүүлийн захиалгууд</h2>
+            <Link href="/admin/bookings" className="text-xs text-forest-500 hover:text-forest-700">
+              Бүгдийг харах →
+            </Link>
+          </div>
+          <table className="w-full">
+            <tbody className="divide-y divide-gray-50">
+              {stats.recentBookings.map((b: any) => (
+                <tr key={b.id} className="hover:bg-gray-50/40">
+                  <td className="px-6 py-3.5">
+                    <div className="text-sm font-medium text-forest-900">{b.guest_name}</div>
+                    <div className="text-xs text-forest-400">{b.guest_phone}</div>
+                  </td>
+                  <td className="px-6 py-3.5 text-xs text-forest-500">
+                    {formatDate(b.check_in)} → {formatDate(b.check_out)}
+                  </td>
+                  <td className="px-6 py-3.5 text-sm font-medium text-forest-700">
+                    {formatPrice(b.total_amount)}
+                  </td>
+                  <td className="px-6 py-3.5">
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusColors[b.status] ?? ''}`}>
+                      {statusLabels[b.status] ?? b.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

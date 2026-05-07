@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, MapPin, CalendarCheck, Users,
-  Star, Settings, LogOut, Leaf, ChevronRight, Building2,
+  Star, Settings, LogOut, Leaf, ChevronRight, Building2, CalendarX,
 } from 'lucide-react';
 import { cn, getInitials } from '@/lib/utils';
 import { signOut } from '@/lib/actions/auth';
@@ -58,6 +58,7 @@ export default function AdminSidebar({
               ? [
                   { href: `/admin/places/${assignedPlaceId}/edit`, icon: Building2,    label: assignedPlaceName ?? 'Миний газар' },
                   { href: '/admin/bookings',                       icon: CalendarCheck, label: 'Захиалгууд' },
+                  { href: '/admin/availability',                   icon: CalendarX,     label: 'Огноо блоклох' },
                   { href: '/admin/reviews',                        icon: Star,          label: 'Сэтгэгдлүүд' },
                 ]
               : []),

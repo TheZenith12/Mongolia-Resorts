@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { getCurrentProfile } from '@/lib/actions/auth';
 import { getUserBookings, getUserLikedPlaces } from '@/lib/actions/auth';
 import { formatPrice, formatDate, getBookingStatusLabel, getPaymentStatusLabel } from '@/lib/utils';
-import { Calendar, MapPin, Users, ArrowRight, Heart } from 'lucide-react';
+import { Calendar, MapPin, Users, ArrowRight, Heart, Settings } from 'lucide-react';
 import ProfileTabs from '@/components/profile/ProfileTabs';
+import CancelBookingButton from '@/components/profile/CancelBookingButton';
 
 export default async function MyBookingsPage({
   searchParams,
@@ -32,9 +33,14 @@ export default async function MyBookingsPage({
   return (
     <div className="page-container py-12">
       <div className="max-w-3xl mx-auto">
-        <h1 className="font-display text-4xl font-semibold text-forest-900 mb-6">
-          Миний хуудас
-        </h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="font-display text-4xl font-semibold text-forest-900">
+            Миний хуудас
+          </h1>
+          <Link href="/profile/edit" className="flex items-center gap-1.5 text-sm text-forest-500 hover:text-forest-700 transition-colors">
+            <Settings size={15} /> Профайл засах
+          </Link>
+        </div>
 
         {/* Tabs */}
         <ProfileTabs activeTab={tab} bookingCount={bookings.length} favoriteCount={likedPlaces.length} />
@@ -95,19 +101,29 @@ export default async function MyBookingsPage({
                               <span className={`ml-2 badge text-xs ${
                                 booking.payment_status === 'paid'
                                   ? 'bg-green-50 text-green-700 border-green-200'
+                                  : booking.payment_status === 'refunded'
+                                  ? 'bg-purple-50 text-purple-700 border-purple-200'
                                   : 'bg-gray-50 text-gray-500 border-gray-200'
                               }`}>
                                 {getPaymentStatusLabel(booking.payment_status)}
                               </span>
                             </div>
-                            {booking.payment_status === 'pending' && (
-                              <Link
-                                href={`/booking/${booking.id}/payment`}
-                                className="flex items-center gap-1 text-amber-600 text-xs font-medium hover:text-amber-700"
-                              >
-                                Төлбөр хийх <ArrowRight size={12} />
-                              </Link>
-                            )}
+                            <div className="flex items-center gap-3">
+                              {booking.payment_status === 'pending' && (
+                                <Link
+                                  href={`/booking/${booking.id}/payment`}
+                                  className="flex items-center gap-1 text-amber-600 text-xs font-medium hover:text-amber-700"
+                                >
+                                  Төлбөр хийх <ArrowRight size={12} />
+                                </Link>
+                              )}
+                              {(booking.status === 'pending' || booking.status === 'confirmed') && (
+                                <CancelBookingButton
+                                  bookingId={booking.id}
+                                  paymentStatus={booking.payment_status}
+                                />
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>

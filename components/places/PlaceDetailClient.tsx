@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -31,17 +31,29 @@ import { createClient } from "@/lib/supabase";
 import { toast } from "react-hot-toast";
 import BookingPanel from "@/components/places/BookingPanel";
 import ReviewsSection from "@/components/places/ReviewsSection";
+import ShareButton from "@/components/places/ShareButton";
 
 export default function PlaceDetailClient({
   place,
   initialLiked,
   profile,
+  similarPlaces = [],
 }: any) {
   const router = useRouter();
   const [liked, setLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(place.like_count ?? 0);
   const [imageIndex, setImageIndex] = useState(0);
   const isResort = place.type === "resort";
+
+  // Track view — fire after mount so it doesn't block page load
+  useEffect(() => {
+    fetch('/api/places/view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ place_id: place.id }),
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [place.id]);
 
   const allImages = [
     ...(place.cover_image ? [place.cover_image] : []),
@@ -192,6 +204,7 @@ export default function PlaceDetailClient({
                 )}
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
+                <ShareButton title={place.name} />
                 <button
                   onClick={handleLike}
                   className={cn(
@@ -382,6 +395,64 @@ export default function PlaceDetailClient({
             </div>
           </div>
         </div>
+
+        {/* Similar places */}
+        {similarPlaces.length > 0 && (
+          <div className="mt-16 pt-10 border-t border-forest-100">
+            <h2 className="font-display text-3xl font-semibold text-forest-900 mb-6">
+              Төстэй газрууд
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {similarPlaces.map((sp: any) => (
+                <a
+                  key={sp.id}
+                  href={`/places/${sp.id}`}
+                  className="card overflow-hidden group card-hover"
+                >
+                  <div className="relative h-44 bg-forest-100">
+                    {sp.cover_image ? (
+                      <Image
+                        src={sp.cover_image}
+                        alt={sp.name}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-4xl">
+                        {sp.type === 'resort' ? '🏕' : '🌿'}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-forest-950/50 via-transparent to-transparent" />
+                    {sp.rating_avg > 0 && (
+                      <div className="absolute top-3 left-3 flex items-center gap-1 glass px-2 py-1 rounded-lg">
+                        <Star size={11} className="text-amber-400 fill-amber-400" />
+                        <span className="text-xs font-semibold text-forest-900">
+                          {Number(sp.rating_avg).toFixed(1)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-display text-lg font-semibold text-forest-900 leading-tight mb-1 line-clamp-1">
+                      {sp.name}
+                    </h3>
+                    {sp.province && (
+                      <div className="flex items-center gap-1 text-forest-500 text-xs mb-2">
+                        <MapPin size={11} /> {sp.province}
+                      </div>
+                    )}
+                    {sp.price_per_night && (
+                      <div className="text-sm font-semibold text-amber-600">
+                        {formatPrice(sp.price_per_night)}
+                        <span className="text-forest-400 font-normal text-xs"> / шөнө</span>
+                      </div>
+                    )}
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

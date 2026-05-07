@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Calendar, Users, CreditCard, Smartphone, ArrowRight, Lock, Loader2 } from 'lucide-react';
 import { formatPrice, calculateNights } from '@/lib/utils';
 import { createClient } from '@/lib/supabase';
+import { getBookedDateRanges } from '@/lib/actions/auth';
 import { toast } from 'react-hot-toast';
 
 interface Room {
@@ -31,10 +32,20 @@ export default function BookingPanel({ place, profile }: any) {
   const [payMethod, setPayMethod] = useState<'stripe' | 'qpay'>('qpay');
   const [loading, setLoading]   = useState(false);
 
+  const [bookedRanges, setBookedRanges] = useState<Array<{ check_in: string; check_out: string }>>([]);
+  const [dateConflict, setDateConflict] = useState(false);
+
   const today = new Date().toISOString().split('T')[0];
   const nights = checkIn && checkOut ? calculateNights(checkIn, checkOut) : 0;
   const price = selectedRoom?.price_per_night ?? place.price_per_night ?? 0;
   const total = nights * price * (selectedRoom ? 1 : guests);
+
+  function hasConflict(cin: string, cout: string, roomId?: string): boolean {
+    return bookedRanges.some(r => {
+      if (roomId && (r as any).room_id && (r as any).room_id !== roomId) return false;
+      return cin < r.check_out && cout > r.check_in;
+    });
+  }
 
   useEffect(() => {
     if (!isResort) return;
@@ -47,6 +58,19 @@ export default function BookingPanel({ place, profile }: any) {
       });
   }, [place.id, isResort]);
 
+  useEffect(() => {
+    getBookedDateRanges(place.id, selectedRoom?.id).then(setBookedRanges);
+  }, [place.id, selectedRoom?.id]);
+
+  useEffect(() => {
+    if (checkIn && checkOut) {
+      setDateConflict(hasConflict(checkIn, checkOut, selectedRoom?.id));
+    } else {
+      setDateConflict(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkIn, checkOut, bookedRanges, selectedRoom?.id]);
+
   async function handleBook() {
     if (!profile) {
       toast.error('Захиалахын тулд нэвтрэх шаардлагатай');
@@ -56,6 +80,7 @@ export default function BookingPanel({ place, profile }: any) {
     if (!checkIn || !checkOut) { toast.error('Огноо сонгоно уу'); return; }
     if (nights < 1) { toast.error('Буцах огноо буруу байна'); return; }
     if (rooms.length > 0 && !selectedRoom) { toast.error('Өрөө сонгоно уу'); return; }
+    if (dateConflict) { toast.error('Сонгосон огноонд захиалга аль хэдийн байна'); return; }
 
     setLoading(true);
     try {
@@ -203,6 +228,14 @@ export default function BookingPanel({ place, profile }: any) {
           </div>
         )}
 
+        {/* Date conflict warning */}
+        {dateConflict && (
+          <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">
+            <span className="text-base">⚠️</span>
+            Сонгосон огноонд аль хэдийн захиалга байна. Өөр огноо сонгоно уу.
+          </div>
+        )}
+
         {/* Payment */}
         <div>
           <label className="text-xs font-medium text-forest-500 mb-2 block">Төлбөрийн хэлбэр</label>
@@ -242,7 +275,7 @@ export default function BookingPanel({ place, profile }: any) {
         </div>
       )}
 
-      <button onClick={handleBook} disabled={loading} className="btn-amber w-full py-3.5">
+      <button onClick={handleBook} disabled={loading || dateConflict} className="btn-amber w-full py-3.5 disabled:opacity-50 disabled:cursor-not-allowed">
         {loading ? (
           <span className="flex items-center gap-2">
             <Loader2 size={16} className="animate-spin" /> Боловсруулж байна...

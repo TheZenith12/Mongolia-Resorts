@@ -169,3 +169,55 @@ h1, h2, h3, h4 {
 .rich-text h3 { margin: 1.5rem 0 0.75rem; font-family: var(--font-cormorant); font-size: 1.5rem; }
 .rich-text ul { margin: 0.75rem 0 0.75rem 1.5rem; }
 .rich-text li { margin-bottom: 0.5rem; }
+
+/* ── Dark Mode ────────────────────────────────────────────────────────────── */
+.dark body {
+  background-color: #0a1a10;
+  color: #d9ede0;
+}
+
+.dark .card {
+  background: #111f15 !important;
+  border-color: #1e3326 !important;
+}
+
+.dark .glass {
+  background: rgba(10, 26, 16, 0.85) !important;
+  border-color: rgba(255,255,255,0.06) !important;
+}
+
+.dark .input-field {
+  background: #0d2218 !important;
+  border-color: #1e3326 !important;
+  color: #d9ede0 !important;
+}
+.dark .input-field::placeholder { color: #4a7a5e !important; }
+
+.dark .btn-secondary {
+  background: #111f15 !important;
+  border-color: #1e3326 !important;
+  color: #a3d4b5 !important;
+}
+
+/* Text overrides */
+.dark .text-forest-900 { color: #d9ede0 !important; }
+.dark .text-forest-700 { color: #a3d4b5 !important; }
+.dark .text-forest-600 { color: #7ab89a !important; }
+.dark .text-forest-500 { color: #4a7a5e !important; }
+
+/* Background overrides */
+.dark .bg-white        { background-color: #111f15 !important; }
+.dark .bg-forest-50    { background-color: #0d2218 !important; }
+.dark .bg-cream        { background-color: #0a1a10 !important; }
+
+/* Border overrides */
+.dark .border-forest-100 { border-color: #1e3326 !important; }
+.dark .border-forest-200 { border-color: #1e3326 !important; }
+
+/* Table rows */
+.dark tr.hover\:bg-gray-50\/40:hover { background: #0d2218 !important; }
+.dark .divide-y.divide-gray-50 > * { border-color: #1e3326 !important; }
+.dark .bg-gray-50  { background: #0d2218 !important; }
+
+/* Header dark */
+.dark header.sticky { border-color: rgba(255,255,255,0.06) !important; }

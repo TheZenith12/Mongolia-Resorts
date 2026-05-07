@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-server';
+import { rateLimit } from '@/lib/rate-limit';
 
 // QPay API Integration
 async function getQPayToken(): Promise<string> {
@@ -18,6 +19,15 @@ async function getQPayToken(): Promise<string> {
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0] ?? 'unknown';
+    const rl = rateLimit(`qpay:${ip}`, 10, 60_000);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Хэт олон хүсэлт. 1 минутын дараа дахин оролдоно уу.' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.retryAfterMs / 1000)) } }
+      );
+    }
+
     const { booking_id } = await req.json();
     const supabase = createAdminClient();
 

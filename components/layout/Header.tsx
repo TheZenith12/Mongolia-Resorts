@@ -7,6 +7,7 @@ import { Menu, X, MapPin, Eye, Building2, Leaf, Heart, LogOut, ChevronDown } fro
 import { cn } from '@/lib/utils';
 import type { SiteStats, Profile } from '@/lib/types';
 import { signOut } from '@/lib/actions/auth';
+import DarkModeToggle from '@/components/layout/DarkModeToggle';
 
 interface HeaderProps {
   stats: SiteStats;
@@ -87,7 +88,7 @@ export default function Header({ stats, profile }: HeaderProps) {
           </nav>
 
           {/* Right side */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {profile ? (
               <div className="relative">
                 <button
@@ -150,6 +151,8 @@ export default function Header({ stats, profile }: HeaderProps) {
                 </Link>
               </div>
             )}
+
+            <DarkModeToggle />
 
             {/* Mobile menu toggle */}
             <button
