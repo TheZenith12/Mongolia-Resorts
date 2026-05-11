@@ -170,12 +170,6 @@ export default function AvailabilityClient({ placeId, initialBlocks }: Props) {
         )}
       </div>
 
-      {/* Note about migration */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-700">
-        <strong>⚠️ Анхаарна уу:</strong> Энэ функц ажиллахын тулд{' '}
-        <code className="bg-amber-100 px-1 rounded">supabase/availability_blocks.sql</code> файлыг
-        Supabase SQL Editor дээр ажиллуулах хэрэгтэй.
-      </div>
     </div>
   );
 }

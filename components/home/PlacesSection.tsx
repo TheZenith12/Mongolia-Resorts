@@ -41,19 +41,17 @@ export default async function PlacesSection({ searchParams }: PlacesSectionProps
         <div className="text-center py-20 bg-white rounded-2xl border border-forest-100">
           <div className="text-5xl mb-4">🔧</div>
           <h2 className="font-display text-2xl font-semibold text-forest-700 mb-3">
-            Supabase тохируулах шаардлагатай
+            MongoDB тохируулах шаардлагатай
           </h2>
           <p className="text-forest-500 text-sm max-w-md mx-auto leading-relaxed">
             <code className="bg-forest-50 px-2 py-1 rounded text-forest-700">.env.local</code> файлд
-            Supabase URL болон API key-ийг оруулж, дараа нь{' '}
-            <code className="bg-forest-50 px-2 py-1 rounded text-forest-700">supabase/schema.sql</code>-ийг
-            Supabase SQL Editor дээр ажиллуулна уу.
+            MongoDB холболтын мэдээллийг оруулна уу.
           </p>
           <div className="mt-6 text-left inline-block bg-forest-950 text-green-300 rounded-xl px-6 py-4 text-sm font-mono">
             <div className="text-forest-400 text-xs mb-2"># .env.local</div>
-            <div>NEXT_PUBLIC_SUPABASE_URL=<span className="text-amber-300">https://xxx.supabase.co</span></div>
-            <div>NEXT_PUBLIC_SUPABASE_ANON_KEY=<span className="text-amber-300">eyJ...</span></div>
-            <div>SUPABASE_SERVICE_ROLE_KEY=<span className="text-amber-300">eyJ...</span></div>
+            <div>MONGODB_URI=<span className="text-amber-300">mongodb+srv://user:pass@cluster.mongodb.net/db</span></div>
+            <div>NEXTAUTH_SECRET=<span className="text-amber-300">your-secret-key</span></div>
+            <div>NEXTAUTH_URL=<span className="text-amber-300">http://localhost:3000</span></div>
           </div>
         </div>
       </section>
