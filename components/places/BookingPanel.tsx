@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, Users, CreditCard, Smartphone, ArrowRight, Lock, Loader2 } from 'lucide-react';
 import { formatPrice, calculateNights } from '@/lib/utils';
-import { createClient } from '@/lib/supabase';
-import { getBookedDateRanges } from '@/lib/actions/auth';
+import { createBooking, getBookedDateRanges } from '@/lib/actions/auth';
 import { toast } from 'react-hot-toast';
 
 interface Room {
@@ -49,13 +48,13 @@ export default function BookingPanel({ place, profile }: any) {
 
   useEffect(() => {
     if (!isResort) return;
-    const supabase = createClient();
-    supabase.from('rooms').select('*').eq('place_id', place.id).eq('is_available', true)
-      .order('price_per_night', { ascending: true })
-      .then(({ data }) => {
-        setRooms((data ?? []) as Room[]);
+    fetch(`/api/places/${place.id}/rooms`)
+      .then(r => r.json())
+      .then(data => {
+        setRooms((Array.isArray(data) ? data : []) as Room[]);
         setLoadingRooms(false);
-      });
+      })
+      .catch(() => setLoadingRooms(false));
   }, [place.id, isResort]);
 
   useEffect(() => {
@@ -84,29 +83,19 @@ export default function BookingPanel({ place, profile }: any) {
 
     setLoading(true);
     try {
-      const supabase = createClient();
-      const payload: any = {
+      const booking = await createBooking({
         place_id:       place.id,
         guest_name:     profile.full_name ?? 'Хэрэглэгч',
         guest_phone:    profile.phone ?? '',
+        guest_email:    profile.email,
         guest_count:    selectedRoom ? selectedRoom.capacity : guests,
         check_in:       checkIn,
         check_out:      checkOut,
         payment_method: payMethod,
-        user_id:        profile.id,
-        total_amount:   total,
-        payment_status: 'pending',
-        status:         'pending',
-      };
-      if (selectedRoom) {
-        payload.room_id   = selectedRoom.id;
-        payload.room_name = selectedRoom.name;
-      }
-
-      const { data, error } = await supabase.from('bookings').insert(payload).select().single();
-      if (error) throw error;
+        notes:          undefined,
+      });
       toast.success('Захиалга амжилттай үүслээ!');
-      router.push(`/booking/${(data as any).id}/payment`);
+      router.push(`/booking/${(booking as any).id}/payment`);
     } catch (err: any) {
       toast.error(err.message ?? 'Алдаа гарлаа');
     } finally {

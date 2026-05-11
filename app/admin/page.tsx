@@ -1,45 +1,40 @@
-import { createAdminClient } from '@/lib/supabase-server';
 import { getCurrentProfile } from '@/lib/actions/auth';
+import { connectDB } from '@/lib/mongodb';
+import { Place, Booking, Review, ManagerAssignment } from '@/lib/models';
 import { CalendarCheck, Star, Eye, DollarSign, MapPin, TrendingUp, Users, Clock } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import Link from 'next/link';
 
 async function getDashboardData(role: string, userId: string) {
   try {
-    const admin = createAdminClient();
+    await connectDB();
 
     if (role === 'super_admin') {
-      const [placesRes, bookingsRes, reviewsRes] = await Promise.all([
-        admin.from('places').select('id, type, view_count, is_published', { count: 'exact' }),
-        (admin.from('bookings') as any).select('total_amount, payment_status, created_at, status'),
-        (admin.from('reviews') as any).select('id', { count: 'exact' }),
+      const [places, bookings, reviewCount] = await Promise.all([
+        Place.find({}).select('type view_count is_published').lean(),
+        Booking.find({}).select('total_amount payment_status created_at status').lean(),
+        Review.countDocuments(),
       ]);
 
-      const places = placesRes.data ?? [];
-      const bookings = bookingsRes.data ?? [];
       const paidBookings = bookings.filter((b: any) => b.payment_status === 'paid');
 
       return {
         isManager: false, placeName: null, assignedPlaceId: null,
-        places: placesRes.count ?? 0,
+        places:         places.length,
         publishedPlaces: places.filter((p: any) => p.is_published).length,
-        bookings: bookings.length,
-        paidBookings: paidBookings.length,
-        totalRevenue: paidBookings.reduce((a: number, b: any) => a + b.total_amount, 0),
-        reviews: reviewsRes.count ?? 0,
-        totalViews: places.reduce((a: number, p: any) => a + (p.view_count ?? 0), 0),
-        monthlyRevenue: getMonthlyRevenue(paidBookings),
+        bookings:       bookings.length,
+        paidBookings:   paidBookings.length,
+        totalRevenue:   paidBookings.reduce((a, b: any) => a + b.total_amount, 0),
+        reviews:        reviewCount,
+        totalViews:     places.reduce((a, p: any) => a + (p.view_count ?? 0), 0),
+        monthlyRevenue: getMonthlyRevenue(paidBookings as any[]),
         recentBookings: [],
-        occupancyRate: null,
+        occupancyRate:  null,
       };
     }
 
     // Manager
-    const { data: assignment } = await (admin.from('manager_assigned_place') as any)
-      .select('place_id, places(name, view_count)')
-      .eq('manager_id', userId)
-      .maybeSingle();
-
+    const assignment = await ManagerAssignment.findOne({ manager_id: userId }).lean();
     if (!assignment) {
       return {
         isManager: true, placeName: null, assignedPlaceId: null,
@@ -49,33 +44,27 @@ async function getDashboardData(role: string, userId: string) {
       };
     }
 
-    const placeId = assignment.place_id;
-
-    const [bookingsRes, reviewsRes, recentRes] = await Promise.all([
-      (admin.from('bookings') as any)
-        .select('total_amount, payment_status, created_at, status, check_in, check_out')
-        .eq('place_id', placeId),
-      (admin.from('reviews') as any).select('id', { count: 'exact' }).eq('place_id', placeId),
-      (admin.from('bookings') as any)
-        .select('id, guest_name, guest_phone, check_in, check_out, status, payment_status, total_amount')
-        .eq('place_id', placeId)
-        .order('created_at', { ascending: false })
-        .limit(5),
+    const placeId = (assignment as any).place_id;
+    const [place, bookings, reviewCount, recentBookings] = await Promise.all([
+      Place.findById(placeId).select('name view_count').lean(),
+      Booking.find({ place_id: placeId }).select('total_amount payment_status created_at status check_in check_out').lean(),
+      Review.countDocuments({ place_id: placeId }),
+      Booking.find({ place_id: placeId })
+        .select('guest_name guest_phone check_in check_out status payment_status total_amount')
+        .sort({ created_at: -1 }).limit(5).lean(),
     ]);
 
-    const bookings = bookingsRes.data ?? [];
     const paidBookings = bookings.filter((b: any) => b.payment_status === 'paid');
-    const confirmedBookings = bookings.filter((b: any) => b.status === 'confirmed' || b.status === 'pending');
+    const confirmedBookings = bookings.filter((b: any) => ['confirmed', 'pending'].includes(b.status));
 
-    // Occupancy: last 30 days ямар хоног захиалагдсан
     const today = new Date();
     const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
     let bookedDays = 0;
     confirmedBookings.forEach((b: any) => {
-      const cin = new Date(b.check_in);
+      const cin  = new Date(b.check_in);
       const cout = new Date(b.check_out);
       const start = cin < thirtyDaysAgo ? thirtyDaysAgo : cin;
-      const end = cout > today ? today : cout;
+      const end   = cout > today ? today : cout;
       if (end > start) {
         bookedDays += Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
       }
@@ -83,17 +72,21 @@ async function getDashboardData(role: string, userId: string) {
     const occupancyRate = Math.min(100, Math.round((bookedDays / 30) * 100));
 
     return {
-      isManager: true,
-      placeName: assignment.places?.name ?? null,
+      isManager:      true,
+      placeName:      (place as any)?.name ?? null,
       assignedPlaceId: placeId,
       places: 1, publishedPlaces: 1,
-      bookings: bookings.length,
-      paidBookings: paidBookings.length,
-      totalRevenue: paidBookings.reduce((a: number, b: any) => a + b.total_amount, 0),
-      reviews: reviewsRes.count ?? 0,
-      totalViews: assignment.places?.view_count ?? 0,
-      monthlyRevenue: getMonthlyRevenue(paidBookings),
-      recentBookings: recentRes.data ?? [],
+      bookings:       bookings.length,
+      paidBookings:   paidBookings.length,
+      totalRevenue:   paidBookings.reduce((a, b: any) => a + b.total_amount, 0),
+      reviews:        reviewCount,
+      totalViews:     (place as any)?.view_count ?? 0,
+      monthlyRevenue: getMonthlyRevenue(paidBookings as any[]),
+      recentBookings: recentBookings.map((b: any) => ({
+        ...b,
+        id:         b._id.toString(),
+        created_at: b.created_at?.toISOString(),
+      })),
       occupancyRate,
     };
   } catch {
@@ -109,20 +102,16 @@ async function getDashboardData(role: string, userId: string) {
 function getMonthlyRevenue(paidBookings: any[]): Array<{ month: string; revenue: number }> {
   const months: Record<string, number> = {};
   const now = new Date();
-
-  // Last 6 months seed
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     months[key] = 0;
   }
-
   paidBookings.forEach((b: any) => {
     const d = new Date(b.created_at);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     if (months[key] !== undefined) months[key] += b.total_amount;
   });
-
   const MN_MONTHS = ['1-р сар','2-р сар','3-р сар','4-р сар','5-р сар','6-р сар','7-р сар','8-р сар','9-р сар','10-р сар','11-р сар','12-р сар'];
   return Object.entries(months).map(([key, revenue]) => ({
     month: MN_MONTHS[parseInt(key.split('-')[1]) - 1],
@@ -198,7 +187,6 @@ export default async function AdminDashboard() {
         </p>
       </div>
 
-      {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card) => {
           const Icon = card.icon;
@@ -214,11 +202,8 @@ export default async function AdminDashboard() {
         })}
       </div>
 
-      {/* Manager-specific extra info */}
       {stats.isManager && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-          {/* Monthly revenue chart */}
           {stats.monthlyRevenue.length > 0 && (
             <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
               <div className="flex items-center justify-between mb-2">
@@ -231,9 +216,7 @@ export default async function AdminDashboard() {
             </div>
           )}
 
-          {/* Occupancy + quick links */}
           <div className="space-y-4">
-            {/* Occupancy rate */}
             {stats.occupancyRate !== null && (
               <div className="bg-white rounded-2xl border border-gray-100 p-5">
                 <div className="flex items-center gap-2 mb-3">
@@ -251,13 +234,12 @@ export default async function AdminDashboard() {
               </div>
             )}
 
-            {/* Quick links */}
             <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-2">
               <p className="text-xs font-semibold text-forest-500 uppercase tracking-wide mb-3">Хурдан холбоос</p>
               {[
-                { href: '/admin/bookings',    label: 'Захиалгууд харах',    icon: CalendarCheck },
-                { href: '/admin/availability', label: 'Огноо блоклох',      icon: Clock },
-                { href: '/admin/reviews',      label: 'Сэтгэгдлүүд',        icon: Star },
+                { href: '/admin/bookings',    label: 'Захиалгууд харах',   icon: CalendarCheck },
+                { href: '/admin/availability', label: 'Огноо блоклох',     icon: Clock },
+                { href: '/admin/reviews',      label: 'Сэтгэгдлүүд',       icon: Star },
               ].map(l => (
                 <Link key={l.href} href={l.href}
                   className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-forest-50 text-sm text-forest-700 transition-colors">
@@ -269,7 +251,6 @@ export default async function AdminDashboard() {
         </div>
       )}
 
-      {/* Recent bookings — manager only */}
       {stats.isManager && stats.recentBookings.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">

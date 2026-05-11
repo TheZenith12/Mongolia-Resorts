@@ -1,9 +1,14 @@
 'use server';
 
-import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase-server';
+import { connectDB } from '@/lib/mongodb';
+import { SiteSettings } from '@/lib/models';
+import { getCurrentUser } from '@/lib/auth-server';
 import { revalidatePath } from 'next/cache';
 
-export interface SiteSettings {
+// Keep old name as alias for backward compatibility
+export type SiteSettings = SiteSettingsData;
+
+export interface SiteSettingsData {
   site_name:  string;
   site_phone: string;
   site_email: string;
@@ -12,7 +17,7 @@ export interface SiteSettings {
   ig_url:     string;
 }
 
-const DEFAULTS: SiteSettings = {
+const DEFAULTS: SiteSettingsData = {
   site_name:  'Монгол Нутаг',
   site_phone: '+976 9900-0000',
   site_email: 'info@mongolnudag.mn',
@@ -21,15 +26,14 @@ const DEFAULTS: SiteSettings = {
   ig_url:     '',
 };
 
-export async function getSiteSettings(): Promise<SiteSettings> {
+export async function getSiteSettings(): Promise<SiteSettingsData> {
   try {
-    const admin = createAdminClient();
-    const { data, error } = await (admin.from('site_settings') as any)
-      .select('key, value');
-    if (error || !data) return DEFAULTS;
+    await connectDB();
+    const rows = await SiteSettings.find({}).lean();
+    if (!rows || rows.length === 0) return DEFAULTS;
 
     const map: Record<string, string> = {};
-    (data as { key: string; value: string }[]).forEach(row => {
+    rows.forEach((row: any) => {
       map[row.key] = row.value ?? '';
     });
 
@@ -46,28 +50,22 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   }
 }
 
-export async function updateSiteSettings(settings: SiteSettings): Promise<void> {
+export async function updateSiteSettings(settings: SiteSettingsData): Promise<void> {
   // Super admin эрх шалгах
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Нэвтрэх шаардлагатай');
-
-  const { data: profile } = await supabase
-    .from('profiles').select('role').eq('id', user.id).single();
-  if ((profile as any)?.role !== 'super_admin') {
+  await connectDB();
+  const sessionUser = await getCurrentUser();
+  if (!sessionUser) throw new Error('Нэвтрэх шаардлагатай');
+  if (sessionUser.role !== 'super_admin') {
     throw new Error('Зөвхөн Super Admin тохиргоо өөрчилж чадна');
   }
 
-  const admin = createAdminClient();
-  const rows = Object.entries(settings).map(([key, value]) => ({
-    key,
-    value: value ?? '',
-    updated_at: new Date().toISOString(),
-  }));
-
-  const { error } = await (admin.from('site_settings') as any)
-    .upsert(rows, { onConflict: 'key' });
-
-  if (error) throw new Error(error.message);
+  const ops = Object.entries(settings).map(([key, value]) =>
+    SiteSettings.findOneAndUpdate(
+      { key },
+      { key, value: value ?? '' },
+      { upsert: true, new: true }
+    )
+  );
+  await Promise.all(ops);
   revalidatePath('/admin/settings');
 }

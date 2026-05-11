@@ -1,28 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { getToken } from 'next-auth/jwt';
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) { return req.cookies.get(name)?.value; },
-        set(name: string, value: string, options: any) { res.cookies.set({ name, value, ...options }); },
-        remove(name: string, options: any) { res.cookies.set({ name, value: '', ...options }); },
-      },
-    }
-  );
-
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (req.nextUrl.pathname.startsWith('/admin') && !user) {
+  if (req.nextUrl.pathname.startsWith('/admin') && !token) {
     return NextResponse.redirect(new URL('/auth/login', req.url));
   }
 
-  return res;
+  return NextResponse.next();
 }
 
 export const config = {

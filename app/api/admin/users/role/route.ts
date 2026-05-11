@@ -1,19 +1,16 @@
-// app/api/admin/users/role/route.ts
-// REPLACE the entire file with this
-
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase-server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { connectDB } from '@/lib/mongodb';
+import { User, ManagerAssignment } from '@/lib/models';
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await getServerSession(authOptions);
+    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Super admin эсэхийг шалгах
-    const { data: profile } = await supabase
-      .from('profiles').select('role').eq('id', user.id).single();
-    if ((profile as any)?.role !== 'super_admin') {
+    const sessionUser = session.user as any;
+    if (sessionUser.role !== 'super_admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -27,30 +24,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const admin = createAdminClient();
+    await connectDB();
 
     // Role шинэчлэх
-    const { error: roleError } = await (admin.from('profiles') as any)
-      .update({ role, updated_at: new Date().toISOString() })
-      .eq('id', user_id);
-    if (roleError) throw roleError;
+    await User.findByIdAndUpdate(user_id, { role });
 
     // Manager болгож байгаа бол газар оноох
     if (role === 'manager' && place_id) {
-      // Хуучин оноогдолт байвал устга, шинэ оруулах (upsert)
-      const { error: assignError } = await (admin.from('manager_assigned_place') as any)
-        .upsert(
-          { manager_id: user_id, place_id, assigned_by: user.id, assigned_at: new Date().toISOString() },
-          { onConflict: 'manager_id' }
-        );
-      if (assignError) throw assignError;
+      await ManagerAssignment.findOneAndUpdate(
+        { manager_id: user_id },
+        { manager_id: user_id, place_id, assigned_by: sessionUser.id, assigned_at: new Date() },
+        { upsert: true, new: true }
+      );
     }
 
     // Manager-аас өөр role болгож байгаа бол оноогдолтыг устга
     if (role !== 'manager') {
-      await (admin.from('manager_assigned_place') as any)
-        .delete()
-        .eq('manager_id', user_id);
+      await ManagerAssignment.deleteOne({ manager_id: user_id });
     }
 
     return NextResponse.json({ success: true });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createAdminClient } from '@/lib/supabase-server';
+import { connectDB } from '@/lib/mongodb';
+import { Booking } from '@/lib/models';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20',
@@ -17,19 +18,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
 
-  const supabase = createAdminClient();
+  await connectDB();
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
     const bookingId = session.metadata?.booking_id;
 
     if (bookingId) {
-      await (supabase.from('bookings') as any).update({
+      await Booking.findByIdAndUpdate(bookingId, {
         payment_status: 'paid',
         status:         'confirmed',
         payment_intent: session.payment_intent as string,
-        updated_at:     new Date().toISOString(),
-      }).eq('id', bookingId);
+      });
     }
   }
 
@@ -37,10 +37,7 @@ export async function POST(req: NextRequest) {
     const session = event.data.object as Stripe.Checkout.Session;
     const bookingId = session.metadata?.booking_id;
     if (bookingId) {
-      await (supabase.from('bookings') as any).update({
-        payment_status: 'failed',
-        updated_at:     new Date().toISOString(),
-      }).eq('id', bookingId);
+      await Booking.findByIdAndUpdate(bookingId, { payment_status: 'failed' });
     }
   }
 

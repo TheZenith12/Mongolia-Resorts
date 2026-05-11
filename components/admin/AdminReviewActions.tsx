@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { CheckCircle, Trash2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
 
 interface AdminReviewActionsProps {
@@ -17,15 +16,19 @@ export default function AdminReviewActions({ reviewId, isVerified }: AdminReview
 
   async function handleVerify() {
     setLoading(true);
-    const supabase = createClient();
-    const { error } = await (supabase
-      .from('reviews') as any)
-      .update({ is_verified: !verified })
-      .eq('id', reviewId);
-    if (!error) {
-      setVerified(!verified);
-      toast.success(verified ? 'Баталгаажуулалт цуцлагдлаа' : 'Баталгаажуулагдлаа');
-    } else {
+    try {
+      const res = await fetch('/api/admin/reviews/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewId, isVerified: !verified }),
+      });
+      if (res.ok) {
+        setVerified(!verified);
+        toast.success(verified ? 'Баталгаажуулалт цуцлагдлаа' : 'Баталгаажуулагдлаа');
+      } else {
+        toast.error('Алдаа гарлаа');
+      }
+    } catch {
       toast.error('Алдаа гарлаа');
     }
     setLoading(false);
@@ -34,12 +37,19 @@ export default function AdminReviewActions({ reviewId, isVerified }: AdminReview
   async function handleDelete() {
     if (!confirm('Сэтгэгдлийг устгах уу?')) return;
     setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.from('reviews').delete().eq('id', reviewId);
-    if (!error) {
-      setDeleted(true);
-      toast.success('Сэтгэгдэл устгагдлаа');
-    } else {
+    try {
+      const res = await fetch('/api/admin/reviews/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewId }),
+      });
+      if (res.ok) {
+        setDeleted(true);
+        toast.success('Сэтгэгдэл устгагдлаа');
+      } else {
+        toast.error('Алдаа гарлаа');
+      }
+    } catch {
       toast.error('Алдаа гарлаа');
     }
     setLoading(false);

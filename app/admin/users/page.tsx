@@ -1,32 +1,37 @@
-import { createAdminClient } from '@/lib/supabase-server';
 import { getCurrentProfile } from '@/lib/actions/auth';
 import { redirect } from 'next/navigation';
 import { formatDate, getInitials } from '@/lib/utils';
 import AdminUserRoleChange from '@/components/admin/AdminUserRoleChange';
+import { connectDB } from '@/lib/mongodb';
+import { User, ManagerAssignment, Place } from '@/lib/models';
 
 async function getUsers() {
-  const admin = createAdminClient();
+  await connectDB();
 
-  // Auth users — бүх бүртгэлтэй хэрэглэгч (service role шаардана)
-  const { data: { users: authUsers } } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  const users = await User.find({}).sort({ created_at: -1 }).limit(1000).lean();
+  const assignments = await ManagerAssignment.find({}).lean();
+  const assignmentMap = new Map(
+    assignments.map((a: any) => [a.manager_id.toString(), a.place_id])
+  );
 
-  // Profiles — байж болно, байхгүй байж болно
-  const { data: profiles } = await (admin.from('profiles') as any)
-    .select('*, manager_assigned_place(place_id, places(name))')
-    .in('id', authUsers.map((u) => u.id));
+  // Fetch assigned place names
+  const placeIds = assignments.map((a: any) => a.place_id).filter(Boolean);
+  const places = await Place.find({ _id: { $in: placeIds } }).select('_id name').lean();
+  const placeNameMap = new Map(places.map((p: any) => [p._id.toString(), p.name]));
 
-  const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
-
-  return authUsers.map((u) => {
-    const profile = profileMap.get(u.id) as any;
+  return users.map((u: any) => {
+    const assignedPlaceId = assignmentMap.get(u._id.toString()) ?? null;
+    const assignedPlace   = assignedPlaceId ? placeNameMap.get(assignedPlaceId) ?? null : null;
     return {
-      id:         u.id,
-      email:      u.email ?? '',
-      full_name:  profile?.full_name ?? (u.user_metadata as any)?.full_name ?? '—',
-      phone:      profile?.phone ?? '—',
-      role:       profile?.role ?? 'user',
-      created_at: u.created_at,
-      manager_assigned_place: profile?.manager_assigned_place ?? [],
+      id:         u._id.toString(),
+      email:      u.email,
+      full_name:  u.full_name || '—',
+      phone:      u.phone || '—',
+      role:       u.role,
+      created_at: u.created_at?.toISOString() ?? new Date().toISOString(),
+      manager_assigned_place: assignedPlaceId
+        ? [{ place_id: assignedPlaceId, places: { name: assignedPlace } }]
+        : [],
     };
   });
 }
@@ -43,9 +48,9 @@ export default async function AdminUsersPage() {
     user:        'bg-gray-50 text-gray-600 border-gray-200',
   };
   const roleLabels: Record<string, string> = {
-    super_admin: '👑 Super Admin',
-    manager:     '🔑 Manager',
-    user:        '👤 Хэрэглэгч',
+    super_admin: 'Super Admin',
+    manager:     'Manager',
+    user:        'Хэрэглэгч',
   };
 
   return (
@@ -89,7 +94,7 @@ export default async function AdminUsersPage() {
                   </td>
                   <td className="px-5 py-4 text-sm">
                     {assignedPlace ? (
-                      <span className="text-forest-700 font-medium">🏕 {assignedPlace}</span>
+                      <span className="text-forest-700 font-medium">{assignedPlace}</span>
                     ) : (
                       <span className="text-forest-300 text-xs">—</span>
                     )}

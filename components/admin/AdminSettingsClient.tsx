@@ -18,7 +18,7 @@ export default function AdminSettingsClient({ profile, initialSettings }: Props)
   const [saved, setSaved] = useState(false);
 
   function set(key: keyof SiteSettings, value: string) {
-    setForm(f => ({ ...f, [key]: value }));
+    setForm((f: SiteSettings) => ({ ...f, [key]: value }));
     setSaved(false);
   }
 

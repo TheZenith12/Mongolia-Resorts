@@ -1,37 +1,53 @@
-// app/admin/reviews/page.tsx
-// REPLACE the entire file
-
-import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase-server';
 import { getCurrentProfile } from '@/lib/actions/auth';
 import { formatDate, getInitials } from '@/lib/utils';
 import { Star, CheckCircle } from 'lucide-react';
 import AdminReviewActions from '@/components/admin/AdminReviewActions';
+import { connectDB } from '@/lib/mongodb';
+import { Review, Place, User, ManagerAssignment } from '@/lib/models';
 
 async function getReviews(role: string, userId: string) {
-  const admin = createAdminClient();
+  await connectDB();
 
   if (role === 'super_admin') {
-    const { data } = await (admin.from('reviews') as any)
-      .select('*, place:places(id, name), user:profiles(id, full_name)')
-      .order('created_at', { ascending: false })
-      .limit(100);
-    return data ?? [];
+    const reviews = await Review.find({}).sort({ created_at: -1 }).limit(100).lean();
+    const placeIds = Array.from(new Set(reviews.map((r: any) => r.place_id).filter(Boolean)));
+    const userIds  = Array.from(new Set(reviews.map((r: any) => r.user_id).filter(Boolean)));
+
+    const [places, users] = await Promise.all([
+      Place.find({ _id: { $in: placeIds } }).select('_id name').lean(),
+      User.find({ _id: { $in: userIds } }).select('_id full_name').lean(),
+    ]);
+
+    const placeMap = new Map(places.map((p: any) => [p._id.toString(), p.name]));
+    const userMap  = new Map(users.map((u: any) => [u._id.toString(), u.full_name]));
+
+    return reviews.map((r: any) => ({
+      ...r,
+      id:         r._id.toString(),
+      created_at: r.created_at?.toISOString(),
+      place:      { id: r.place_id, name: placeMap.get(r.place_id) ?? 'Газар' },
+      user:       r.user ?? { full_name: userMap.get(r.user_id) ?? 'Хэрэглэгч' },
+    }));
   }
 
   // Manager: зөвхөн өөрийн газрын reviews
-  const { data: assignment } = await (admin.from('manager_assigned_place') as any)
-    .select('place_id')
-    .eq('manager_id', userId)
-    .maybeSingle();
+  const assignment = await ManagerAssignment.findOne({ manager_id: userId }).lean();
+  const placeId = (assignment as any)?.place_id;
+  if (!placeId) return [];
 
-  if (!assignment?.place_id) return [];
+  const reviews = await Review.find({ place_id: placeId }).sort({ created_at: -1 }).limit(100).lean();
+  const place = await Place.findById(placeId).select('name').lean();
+  const userIds = Array.from(new Set(reviews.map((r: any) => r.user_id).filter(Boolean)));
+  const users = await User.find({ _id: { $in: userIds } }).select('_id full_name').lean();
+  const userMap = new Map(users.map((u: any) => [u._id.toString(), u.full_name]));
 
-  const { data } = await (admin.from('reviews') as any)
-    .select('*, place:places(id, name), user:profiles(id, full_name)')
-    .eq('place_id', assignment.place_id)
-    .order('created_at', { ascending: false })
-    .limit(100);
-  return data ?? [];
+  return reviews.map((r: any) => ({
+    ...r,
+    id:         r._id.toString(),
+    created_at: r.created_at?.toISOString(),
+    place:      { id: placeId, name: (place as any)?.name ?? 'Газар' },
+    user:       r.user ?? { full_name: userMap.get(r.user_id) ?? 'Хэрэглэгч' },
+  }));
 }
 
 export default async function AdminReviewsPage() {

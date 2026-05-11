@@ -1,53 +1,92 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { connectDB } from '@/lib/mongodb';
+import { Place, Review, Like, User } from '@/lib/models';
 import PlaceDetailClient from '@/components/places/PlaceDetailClient';
 import { buildPlaceMetadata, buildPlaceSchema, buildBreadcrumbSchema } from '@/lib/seo';
 import { getSimilarPlaces } from '@/lib/actions/places';
-import type { Place } from '@/lib/types';
+import type { Place as PlaceType } from '@/lib/types';
 
 interface PlacePageProps {
   params: { id: string };
 }
 
 export async function generateMetadata({ params }: PlacePageProps): Promise<Metadata> {
-  const supabase = await createServerSupabaseClient();
-  const { data } = await supabase
-    .from('places')
-    .select('*')
-    .eq('id', params.id)
-    .single();
-
-  if (!data) return { title: 'Газар олдсонгүй' };
-  return buildPlaceMetadata(data as Place);
+  try {
+    await connectDB();
+    const doc = await Place.findById(params.id).lean();
+    if (!doc) return { title: 'Газар олдсонгүй' };
+    const p = {
+      ...(doc as any),
+      id:         (doc as any)._id.toString(),
+      images:     (doc as any).images ?? [],
+      like_count: 0,
+      created_at: (doc as any).created_at?.toISOString(),
+      updated_at: (doc as any).updated_at?.toISOString(),
+    };
+    return buildPlaceMetadata(p as PlaceType);
+  } catch {
+    return { title: 'Газар олдсонгүй' };
+  }
 }
 
 export default async function PlacePage({ params }: PlacePageProps) {
-  const supabase = await createServerSupabaseClient();
+  await connectDB();
 
-  const { data: place, error } = await supabase
-    .from('places')
-    .select('*, reviews(*, user:profiles(id, full_name))')
-    .eq('id', params.id)
-    .single();
+  const doc = await Place.findById(params.id).lean();
+  if (!doc) notFound();
 
-  if (error || !place) notFound();
+  const reviews = await Review.find({ place_id: params.id }).sort({ created_at: -1 }).lean();
+  const reviewsFormatted = reviews.map((r: any) => ({
+    id:         r._id.toString(),
+    place_id:   r.place_id,
+    user_id:    r.user_id ?? null,
+    booking_id: r.booking_id ?? null,
+    rating:     r.rating,
+    title:      r.title ?? null,
+    body:       r.body ?? null,
+    images:     r.images ?? [],
+    is_verified: r.is_verified ?? false,
+    created_at: r.created_at?.toISOString() ?? new Date().toISOString(),
+    user:       r.user ?? null,
+  }));
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const place = {
+    ...(doc as any),
+    id:         (doc as any)._id.toString(),
+    images:     (doc as any).images ?? [],
+    like_count: 0,
+    created_at: (doc as any).created_at?.toISOString(),
+    updated_at: (doc as any).updated_at?.toISOString(),
+    reviews:    reviewsFormatted,
+  };
+
+  const session = await getServerSession(authOptions);
+  const sessionUser = session?.user as any;
 
   let likedIds: string[] = [];
-  if (user) {
-    const { data: likes } = await supabase
-      .from('likes')
-      .select('place_id')
-      .eq('user_id', user.id);
-    likedIds = likes?.map((l: any) => l.place_id) ?? [];
-  }
-
   let profile = null;
-  if (user) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    profile = data;
+
+  if (sessionUser?.id) {
+    const [likes, userDoc] = await Promise.all([
+      Like.find({ user_id: sessionUser.id }).select('place_id').lean(),
+      User.findById(sessionUser.id).select('full_name phone avatar_url role').lean(),
+    ]);
+    likedIds = likes.map((l: any) => l.place_id);
+    if (userDoc) {
+      profile = {
+        id:         (userDoc as any)._id.toString(),
+        email:      sessionUser.email,
+        full_name:  (userDoc as any).full_name ?? null,
+        phone:      (userDoc as any).phone ?? null,
+        avatar_url: (userDoc as any).avatar_url ?? null,
+        role:       (userDoc as any).role,
+        created_at: (userDoc as any).created_at?.toISOString() ?? new Date().toISOString(),
+        updated_at: (userDoc as any).updated_at?.toISOString() ?? new Date().toISOString(),
+      };
+    }
   }
 
   const similarPlaces = await getSimilarPlaces(
@@ -57,15 +96,11 @@ export default async function PlacePage({ params }: PlacePageProps) {
     4
   ).catch(() => []);
 
-  // View count is tracked client-side via /api/places/view (see PlaceDetailClient)
-
-  // JSON-LD structured data — Google-д газрыг зөв таниулна
-  const placeSchema = buildPlaceSchema(place as Place);
-  const breadcrumbSchema = buildBreadcrumbSchema(place as Place);
+  const placeSchema       = buildPlaceSchema(place as PlaceType);
+  const breadcrumbSchema  = buildBreadcrumbSchema(place as PlaceType);
 
   return (
     <>
-      {/* Structured Data — Google-д place мэдээлэл дамжуулна */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(placeSchema) }}
@@ -74,7 +109,6 @@ export default async function PlacePage({ params }: PlacePageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
-
       <PlaceDetailClient
         place={place as any}
         initialLiked={likedIds.includes((place as any).id)}
