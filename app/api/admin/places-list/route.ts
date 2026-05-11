@@ -1,31 +1,25 @@
-// app/api/admin/places-list/route.ts
-// NEW FILE - create this
-
 import { NextResponse } from 'next/server';
-import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase-server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { connectDB } from '@/lib/mongodb';
+import { Place } from '@/lib/models';
 
 export async function GET() {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json([], { status: 401 });
+    const session = await getServerSession(authOptions);
+    if (!session?.user) return NextResponse.json([], { status: 401 });
 
-    // Зөвхөн super_admin хандаж чадна
-    const { data: profile } = await supabase
-      .from('profiles').select('role').eq('id', user.id).single();
-    if ((profile as any)?.role !== 'super_admin') {
+    const sessionUser = session.user as any;
+    if (sessionUser.role !== 'super_admin') {
       return NextResponse.json([], { status: 403 });
     }
 
-    // Admin client ашиглаж бүх газруудыг авах
-    const admin = createAdminClient();
-    const { data, error } = await (admin.from('places') as any)
-      .select('id, name')
-      .order('name', { ascending: true });
+    await connectDB();
+    const docs = await Place.find({}).select('_id name').sort({ name: 1 }).lean();
+    const data = docs.map((p: any) => ({ id: p._id.toString(), name: p.name }));
 
-    if (error) throw error;
-    return NextResponse.json(data ?? []);
-  } catch (err: any) {
+    return NextResponse.json(data);
+  } catch {
     return NextResponse.json([], { status: 500 });
   }
 }

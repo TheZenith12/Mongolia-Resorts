@@ -1,9 +1,9 @@
-// app/admin/places/page.tsx
-// REPLACE the entire file with this
-
 import Link from 'next/link';
 import Image from 'next/image';
-import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase-server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { connectDB } from '@/lib/mongodb';
+import { Place, ManagerAssignment } from '@/lib/models';
 import { formatPrice, getPlaceTypeLabel, getPlaceTypeColor } from '@/lib/utils';
 import { Plus, MapPin } from 'lucide-react';
 import AdminPlaceActions from '@/components/admin/AdminPlaceActions';
@@ -14,46 +14,46 @@ export default async function AdminPlacesPage({
 }: {
   searchParams: { page?: string; type?: string; search?: string };
 }) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/auth/login');
+  const session = await getServerSession(authOptions);
+  if (!session?.user) redirect('/auth/login');
 
-  const { data: profile } = await supabase
-    .from('profiles').select('role').eq('id', user.id).single();
-  const role = (profile as any)?.role;
+  const user = session.user as any;
+  const role = user.role;
 
-  const admin = createAdminClient();
+  await connectDB();
   let places: any[] = [];
   let count = 0;
 
   if (role === 'super_admin') {
-    // Super admin: бүх газрыг харна
-    let query = (admin.from('places') as any)
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false });
+    const query: any = {};
+    if (searchParams.type)   query.type = searchParams.type;
+    if (searchParams.search) query.name = { $regex: searchParams.search, $options: 'i' };
 
-    if (searchParams.type)   query = query.eq('type', searchParams.type);
-    if (searchParams.search) query = query.ilike('name', `%${searchParams.search}%`);
-
-    const res = await query;
-    places = res.data ?? [];
-    count = res.count ?? 0;
+    const docs = await Place.find(query).sort({ created_at: -1 }).lean();
+    count = docs.length;
+    places = docs.map((p: any) => ({
+      ...p,
+      id:         p._id.toString(),
+      images:     p.images ?? [],
+      created_at: p.created_at?.toISOString(),
+      updated_at: p.updated_at?.toISOString(),
+    }));
 
   } else if (role === 'manager') {
-    // Manager: зөвхөн өөрийн газар
-    const { data: assignment } = await (admin.from('manager_assigned_place') as any)
-      .select('place_id')
-      .eq('manager_id', user.id)
-      .maybeSingle();
+    const assignment = await ManagerAssignment.findOne({ manager_id: user.id }).lean();
+    const assignedPlaceId = (assignment as any)?.place_id ?? user.assigned_place_id;
 
-    if (assignment?.place_id) {
-      const { data: place } = await (admin.from('places') as any)
-        .select('*')
-        .eq('id', assignment.place_id)
-        .single();
+    if (assignedPlaceId) {
+      const place = await Place.findById(assignedPlaceId).lean();
       if (place) {
-        places = [place];
         count = 1;
+        places = [{
+          ...(place as any),
+          id:         (place as any)._id.toString(),
+          images:     (place as any).images ?? [],
+          created_at: (place as any).created_at?.toISOString(),
+          updated_at: (place as any).updated_at?.toISOString(),
+        }];
       }
     }
   } else {
@@ -76,7 +76,6 @@ export default async function AdminPlacesPage({
         )}
       </div>
 
-      {/* Super admin-д хайлт харуулна */}
       {role === 'super_admin' && (
         <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 flex gap-3">
           <form className="flex gap-3 flex-1">
@@ -92,7 +91,6 @@ export default async function AdminPlacesPage({
         </div>
       )}
 
-      {/* Table */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <table className="w-full">
           <thead>
@@ -119,7 +117,7 @@ export default async function AdminPlacesPage({
                     <div>
                       <div className="font-medium text-forest-900 text-sm">{place.name}</div>
                       <div className="text-xs text-forest-400 mt-0.5">
-                        👁 {place.view_count ?? 0} · ❤️ {place.like_count ?? 0}
+                        {place.view_count ?? 0} үзэлт
                       </div>
                     </div>
                   </div>
@@ -145,7 +143,7 @@ export default async function AdminPlacesPage({
                   <span className={`badge text-xs ${place.is_published
                     ? 'bg-green-50 text-green-700 border-green-200'
                     : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
-                    {place.is_published ? '✓ Нийтлэгдсэн' : '○ Ноорог'}
+                    {place.is_published ? 'Нийтлэгдсэн' : 'Ноорог'}
                   </span>
                 </td>
                 <td className="px-5 py-4">

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Leaf, Mail, Lock, User } from "lucide-react";
-import { createClient } from "@/lib/supabase";
+import { signIn } from "next-auth/react";
 import { toast } from "react-hot-toast";
 
 type Mode = "login" | "register";
@@ -18,43 +18,47 @@ export default function AuthPage({ mode = "login" }: { mode?: Mode }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const supabase = createClient();
 
     try {
       if (mode === "login") {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const result = await signIn("credentials", {
           email,
           password,
+          redirect: false,
         });
-        if (error) throw error;
-        if (data.session) {
-          toast.success("Амжилттай нэвтэрлээ!");
-          // Redirect based on role
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", data.session.user.id)
-            .single();
-          const isAdmin =
-            (profile as any)?.role === "super_admin" || (profile as any)?.role === "manager";
-          window.location.href = isAdmin ? "/admin" : "/";
+
+        if (result?.error) {
+          toast.error("И-мэйл эсвэл нууц үг буруу байна");
+          return;
         }
+
+        toast.success("Амжилттай нэвтэрлээ!");
+        // Redirect to admin or home based on session
+        window.location.href = "/";
       } else {
         if (password.length < 6) {
           toast.error("Нууц үг 6 тэмдэгтээс дээш байх ёстой");
           return;
         }
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { full_name: fullName } },
+
+        const res = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, full_name: fullName }),
         });
-        if (error) throw error;
-        toast.success("Бүртгэл амжилттай!");
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          toast.error(data.error ?? "Бүртгэл амжилтгүй боллоо");
+          return;
+        }
+
+        toast.success("Бүртгэл амжилттай! Нэвтэрнэ үү.");
         window.location.href = "/auth/login";
       }
-    } catch (err: any) {
-      toast.error(err.message ?? "Алдаа гарлаа");
+    } catch {
+      toast.error("Алдаа гарлаа. Дахин оролдоно уу.");
     } finally {
       setLoading(false);
     }

@@ -1,31 +1,27 @@
 'use server';
 
-import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase-server';
+import { connectDB } from '@/lib/mongodb';
+import { Room, ManagerAssignment } from '@/lib/models';
+import { getCurrentUser } from '@/lib/auth-server';
 import { revalidatePath } from 'next/cache';
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 
 async function getRoomAuthContext(placeId: string) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Нэвтрэх шаардлагатай');
+  await connectDB();
+  const sessionUser = await getCurrentUser();
+  if (!sessionUser) throw new Error('Нэвтрэх шаардлагатай');
 
-  const { data: profile } = await supabase
-    .from('profiles').select('role').eq('id', user.id).single();
-  const role = (profile as any)?.role as string;
-
+  const role = sessionUser.role;
   if (!['super_admin', 'manager'].includes(role)) {
     throw new Error('Эрх хүрэлцэхгүй');
   }
 
   // Manager бол зөвхөн өөрт оноогдсон газар
   if (role === 'manager') {
-    const admin = createAdminClient();
-    const { data: assignment } = await (admin.from('manager_assigned_place') as any)
-      .select('place_id')
-      .eq('manager_id', user.id)
-      .maybeSingle();
-    if (!assignment || assignment.place_id !== placeId) {
+    const assignment = await ManagerAssignment.findOne({ manager_id: sessionUser.id }).lean();
+    const assignedPlaceId = (assignment as any)?.place_id ?? sessionUser.assigned_place_id;
+    if (!assignedPlaceId || assignedPlaceId !== placeId) {
       throw new Error('Энэ газрын өрөөг засах эрх байхгүй');
     }
   }
@@ -48,49 +44,41 @@ export interface RoomPayload {
 }
 
 export async function getRooms(placeId: string) {
-  const admin = createAdminClient();
-  const { data, error } = await (admin.from('rooms') as any)
-    .select('*')
-    .eq('place_id', placeId)
-    .order('price_per_night', { ascending: true });
-  if (error) throw new Error(error.message);
-  return data ?? [];
+  await connectDB();
+  const rooms = await Room.find({ place_id: placeId })
+    .sort({ price_per_night: 1 })
+    .lean();
+  return rooms.map((r: any) => ({
+    ...r,
+    id:         r._id.toString(),
+    created_at: r.created_at?.toISOString(),
+    updated_at: r.updated_at?.toISOString(),
+  }));
 }
 
 export async function createRoom(payload: RoomPayload) {
   await getRoomAuthContext(payload.place_id);
-  const admin = createAdminClient();
-  const { data, error } = await (admin.from('rooms') as any)
-    .insert({
-      ...payload,
-      description:  payload.description  || null,
-      cover_image:  payload.cover_image  || null,
-      updated_at:   new Date().toISOString(),
-    })
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
+  const room = await Room.create({
+    ...payload,
+    description: payload.description || null,
+    cover_image: payload.cover_image || null,
+  });
   revalidatePath(`/admin/places/${payload.place_id}/edit`);
   revalidatePath(`/places/${payload.place_id}`);
-  return data;
+  const r = room.toObject();
+  return { ...r, id: r._id.toString() };
 }
 
 export async function updateRoom(id: string, placeId: string, payload: Partial<RoomPayload>) {
   await getRoomAuthContext(placeId);
-  const admin = createAdminClient();
-  const { error } = await (admin.from('rooms') as any)
-    .update({ ...payload, updated_at: new Date().toISOString() })
-    .eq('id', id);
-  if (error) throw new Error(error.message);
+  await Room.findByIdAndUpdate(id, { ...payload });
   revalidatePath(`/admin/places/${placeId}/edit`);
   revalidatePath(`/places/${placeId}`);
 }
 
 export async function deleteRoom(id: string, placeId: string) {
   await getRoomAuthContext(placeId);
-  const admin = createAdminClient();
-  const { error } = await (admin.from('rooms') as any).delete().eq('id', id);
-  if (error) throw new Error(error.message);
+  await Room.findByIdAndDelete(id);
   revalidatePath(`/admin/places/${placeId}/edit`);
   revalidatePath(`/places/${placeId}`);
 }

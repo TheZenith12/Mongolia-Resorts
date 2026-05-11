@@ -27,7 +27,7 @@ import {
   getInitials,
   cn,
 } from "@/lib/utils";
-import { createClient } from "@/lib/supabase";
+import { toggleLike } from "@/lib/actions/auth";
 import { toast } from "react-hot-toast";
 import BookingPanel from "@/components/places/BookingPanel";
 import ReviewsSection from "@/components/places/ReviewsSection";
@@ -66,28 +66,12 @@ export default function PlaceDetailClient({
       router.push("/auth/login");
       return;
     }
-    const supabase = createClient();
-    const { data: existing } = await supabase
-      .from("likes")
-      .select("user_id")
-      .eq("user_id", profile.id)
-      .eq("place_id", place.id)
-      .maybeSingle();
-
-    if (existing) {
-      await supabase
-        .from("likes")
-        .delete()
-        .eq("user_id", profile.id)
-        .eq("place_id", place.id);
-      setLiked(false);
-      setLikeCount((c: number) => c - 1);
-    } else {
-      await (supabase
-        .from("likes") as any)
-        .insert({ user_id: profile.id, place_id: place.id });
-      setLiked(true);
-      setLikeCount((c: number) => c + 1);
+    try {
+      const isNowLiked = await toggleLike(place.id);
+      setLiked(isNowLiked);
+      setLikeCount((c: number) => isNowLiked ? c + 1 : c - 1);
+    } catch {
+      toast.error("Алдаа гарлаа");
     }
   }
 

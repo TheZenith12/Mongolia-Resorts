@@ -1,57 +1,40 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { connectDB } from '@/lib/mongodb';
+import { Booking, Place } from '@/lib/models';
 import { CheckCircle, Calendar, Users, MapPin, ArrowRight, Home } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
-import type { Database } from '@/lib/database.types';
 
-// ===== TYPES =====
-type Booking = Database['public']['Tables']['bookings']['Row'];
-type Place = Database['public']['Tables']['places']['Row'];
+async function getBooking(id: string) {
+  await connectDB();
+  const booking = await Booking.findById(id).lean();
+  if (!booking) return null;
 
-type BookingWithPlace = Booking & {
-  place: Pick<Place, 'id' | 'name' | 'cover_image' | 'province'> | null;
-};
+  const place = await Place.findById((booking as any).place_id)
+    .select('_id name cover_image province')
+    .lean();
 
-// ===== DATA FETCH =====
-async function getBooking(id: string): Promise<BookingWithPlace | null> {
-  const supabase = await createServerSupabaseClient();
-
-  const { data, error } = await supabase
-    .from('bookings')
-    .select(`
-      *,
-      place:places (
-        id,
-        name,
-        cover_image,
-        province
-      )
-    `)
-    .eq('id', id)
-    .single();
-
-  if (error || !data) return null;
-
-  return data as BookingWithPlace;
+  return {
+    ...(booking as any),
+    id:         (booking as any)._id.toString(),
+    created_at: (booking as any).created_at?.toISOString(),
+    updated_at: (booking as any).updated_at?.toISOString(),
+    place: place ? {
+      id:          (place as any)._id.toString(),
+      name:        (place as any).name,
+      cover_image: (place as any).cover_image ?? null,
+      province:    (place as any).province ?? null,
+    } : null,
+  };
 }
 
-// ===== PAGE =====
-export default async function ConfirmationPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function ConfirmationPage({ params }: { params: { id: string } }) {
   const booking = await getBooking(params.id);
-
-  if (!booking) {
-    notFound();
-  }
+  if (!booking) notFound();
 
   return (
     <div className="min-h-screen bg-cream flex items-center justify-center py-16 px-4">
       <div className="max-w-md w-full text-center">
-        {/* Success icon */}
         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
           <CheckCircle size={40} className="text-green-600" />
         </div>
@@ -68,7 +51,6 @@ export default async function ConfirmationPage({
           </code>
         </p>
 
-        {/* Booking details */}
         <div className="card p-6 text-left mb-6">
           {booking.place && (
             <div className="flex items-center gap-3 mb-4 pb-4 border-b border-forest-100">
@@ -96,15 +78,14 @@ export default async function ConfirmationPage({
             <div className="flex items-center gap-2.5 text-forest-600">
               <Calendar size={15} className="text-forest-400" />
               <span>
-                {formatDate(booking.check_in)} —{' '}
-                {formatDate(booking.check_out)}
+                {formatDate(booking.check_in)} — {formatDate(booking.check_out)}
               </span>
             </div>
 
             <div className="flex items-center gap-2.5 text-forest-600">
               <Users size={15} className="text-forest-400" />
               <span>
-                {booking.guest_count} хүн · {booking.nights} шөнө
+                {booking.guest_count} хүн · {booking.nights ?? 1} шөнө
               </span>
             </div>
 
@@ -117,7 +98,6 @@ export default async function ConfirmationPage({
           </div>
         </div>
 
-        {/* Status */}
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-full text-green-700 text-sm font-medium mb-8">
           <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           {booking.payment_status === 'paid'

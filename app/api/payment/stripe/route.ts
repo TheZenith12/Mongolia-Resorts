@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createAdminClient } from '@/lib/supabase-server';
+import { connectDB } from '@/lib/mongodb';
+import { Booking, Place } from '@/lib/models';
 import { rateLimit } from '@/lib/rate-limit';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -19,15 +20,12 @@ export async function POST(req: NextRequest) {
     }
 
     const { booking_id } = await req.json();
-    const supabase = createAdminClient();
 
-    const { data: booking } = await supabase
-      .from('bookings')
-      .select('*, place:places(name, cover_image)')
-      .eq('id', booking_id)
-      .single();
-
+    await connectDB();
+    const booking = await Booking.findById(booking_id).lean();
     if (!booking) return NextResponse.json({ error: 'Захиалга олдсонгүй' }, { status: 404 });
+
+    const place = await Place.findById((booking as any).place_id).select('name cover_image').lean();
 
     // Create Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
@@ -36,11 +34,11 @@ export async function POST(req: NextRequest) {
       line_items: [{
         price_data: {
           currency:     'mnt',
-          unit_amount:  (booking as any).total_amount * 100, // Stripe uses smallest unit
+          unit_amount:  (booking as any).total_amount * 100,
           product_data: {
-            name:        (booking as any).place?.name ?? 'Захиалга',
-            description: `${(booking as any).nights} шөнө · ${(booking as any).guest_count} хүн`,
-            images:      (booking as any).place?.cover_image ? [(booking as any).place.cover_image] : [],
+            name:        (place as any)?.name ?? 'Захиалга',
+            description: `${(booking as any).nights ?? 1} шөнө · ${(booking as any).guest_count} хүн`,
+            images:      (place as any)?.cover_image ? [(place as any).cover_image] : [],
           },
         },
         quantity: 1,
@@ -50,10 +48,8 @@ export async function POST(req: NextRequest) {
       cancel_url:  `${process.env.NEXT_PUBLIC_APP_URL}/booking/${booking_id}/payment?stripe=cancel`,
     });
 
-    // Save payment intent to booking
-    await (supabase.from('bookings') as any).update({
-      payment_intent: session.id,
-    }).eq('id', booking_id);
+    // Save session id to booking
+    await Booking.findByIdAndUpdate(booking_id, { payment_intent: session.id });
 
     return NextResponse.json({ checkout_url: session.url });
   } catch (err: any) {

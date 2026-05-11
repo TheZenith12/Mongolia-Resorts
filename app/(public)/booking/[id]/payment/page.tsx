@@ -1,21 +1,31 @@
 import { notFound, redirect } from 'next/navigation';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { connectDB } from '@/lib/mongodb';
+import { Booking, Place } from '@/lib/models';
 import { getCurrentProfile } from '@/lib/actions/auth';
 import PaymentClient from '@/components/booking/PaymentClient';
-import type { Database } from '@/lib/database.types';
 
-type BookingRow = Database['public']['Tables']['bookings']['Row'] & {
-  place: Pick<Database['public']['Tables']['places']['Row'], 'id' | 'name' | 'cover_image' | 'price_per_night' | 'type'> | null;
-};
+async function getBooking(id: string) {
+  await connectDB();
+  const booking = await Booking.findById(id).lean();
+  if (!booking) return null;
 
-async function getBooking(id: string): Promise<BookingRow | null> {
-  const supabase = await createServerSupabaseClient();
-  const { data } = await supabase
-    .from('bookings')
-    .select('*, place:places(id, name, cover_image, price_per_night, type)')
-    .eq('id', id)
-    .single();
-  return data as BookingRow | null;
+  const place = await Place.findById((booking as any).place_id)
+    .select('_id name cover_image price_per_night type')
+    .lean();
+
+  return {
+    ...(booking as any),
+    id:         (booking as any)._id.toString(),
+    created_at: (booking as any).created_at?.toISOString(),
+    updated_at: (booking as any).updated_at?.toISOString(),
+    place: place ? {
+      id:             (place as any)._id.toString(),
+      name:           (place as any).name,
+      cover_image:    (place as any).cover_image ?? null,
+      price_per_night: (place as any).price_per_night ?? null,
+      type:           (place as any).type,
+    } : null,
+  };
 }
 
 export default async function PaymentPage({ params }: { params: { id: string } }) {

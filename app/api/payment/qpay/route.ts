@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase-server';
+import { connectDB } from '@/lib/mongodb';
+import { Booking, Place } from '@/lib/models';
 import { rateLimit } from '@/lib/rate-limit';
 
 // QPay API Integration
@@ -29,18 +30,14 @@ export async function POST(req: NextRequest) {
     }
 
     const { booking_id } = await req.json();
-    const supabase = createAdminClient();
 
-    // Get booking details
-    const { data: booking, error } = await supabase
-      .from('bookings')
-      .select('*, place:places(name)')
-      .eq('id', booking_id)
-      .single();
-
-    if (error || !booking) {
+    await connectDB();
+    const booking = await Booking.findById(booking_id).lean();
+    if (!booking) {
       return NextResponse.json({ error: 'Захиалга олдсонгүй' }, { status: 404 });
     }
+
+    const place = await Place.findById((booking as any).place_id).select('name').lean();
 
     // Get QPay token
     const token = await getQPayToken();
@@ -53,12 +50,12 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        invoice_code:        process.env.QPAY_INVOICE_CODE,
-        sender_invoice_no:   booking_id,
+        invoice_code:          process.env.QPAY_INVOICE_CODE,
+        sender_invoice_no:     booking_id,
         invoice_receiver_code: 'terminal',
-        invoice_description: `${(booking as any).place?.name ?? 'Захиалга'} - ${booking_id.slice(0, 8)}`,
-        amount:              (booking as any).total_amount,
-        callback_url:        `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/qpay/callback`,
+        invoice_description:   `${(place as any)?.name ?? 'Захиалга'} - ${booking_id.toString().slice(0, 8)}`,
+        amount:                (booking as any).total_amount,
+        callback_url:          `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/qpay/callback`,
       }),
     });
 
@@ -66,9 +63,7 @@ export async function POST(req: NextRequest) {
     if (!invoiceRes.ok) throw new Error(invoiceData.message ?? 'QPay invoice алдаа');
 
     // Save invoice ID to booking
-    await (supabase.from('bookings') as any)
-      .update({ qpay_invoice_id: invoiceData.invoice_id })
-      .eq('id', booking_id);
+    await Booking.findByIdAndUpdate(booking_id, { qpay_invoice_id: invoiceData.invoice_id });
 
     return NextResponse.json({
       invoice_id: invoiceData.invoice_id,

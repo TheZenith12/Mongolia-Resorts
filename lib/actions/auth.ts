@@ -1,74 +1,78 @@
 'use server';
 
-import { createServerSupabaseClient } from '@/lib/supabase-server';
-import type { BookingFormData, Booking, Place} from '@/lib/types';
+import { connectDB } from '@/lib/mongodb';
+import { User, Booking, Like, Review, Place, AvailabilityBlock } from '@/lib/models';
+import { getCurrentUser } from '@/lib/auth-server';
+import type { BookingFormData } from '@/lib/types';
 import { calculateNights } from '@/lib/utils';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import bcrypt from 'bcryptjs';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
-export async function signIn(email: string, password: string): Promise<void> {
-  const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw new Error(error.message);
-  redirect('/');
-}
-
 export async function signUp(email: string, password: string, fullName: string): Promise<void> {
-  const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { full_name: fullName } },
-  });
-  if (error) throw new Error(error.message);
+  await connectDB();
+  const exists = await User.findOne({ email: email.toLowerCase() });
+  if (exists) throw new Error('Энэ и-мэйл бүртгэлтэй байна');
+  const hashed = await bcrypt.hash(password, 12);
+  await User.create({ email: email.toLowerCase(), password: hashed, full_name: fullName });
 }
 
 export async function signOut(): Promise<void> {
-  const supabase = await createServerSupabaseClient();
-  await supabase.auth.signOut();
-  redirect('/');
-}
-
-export async function getSession() {
-  try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    return session;
-  } catch {
-    return null;
-  }
+  redirect('/auth/login');
 }
 
 export async function getCurrentProfile() {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    await connectDB();
+    const sessionUser = await getCurrentUser();
+    if (!sessionUser) return null;
+    const user = await User.findById(sessionUser.id).lean();
     if (!user) return null;
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-    return data;
+    return {
+      id:         (user as any)._id.toString(),
+      email:      (user as any).email,
+      full_name:  (user as any).full_name ?? null,
+      phone:      (user as any).phone ?? null,
+      avatar_url: (user as any).avatar_url ?? null,
+      role:       (user as any).role,
+      created_at: (user as any).created_at?.toISOString() ?? new Date().toISOString(),
+      updated_at: (user as any).updated_at?.toISOString() ?? new Date().toISOString(),
+    };
   } catch {
     return null;
   }
 }
 
+// ── Profile ───────────────────────────────────────────────────────────────────
+
+export async function updateProfile(data: {
+  full_name: string;
+  phone: string;
+  avatar_url?: string;
+}): Promise<void> {
+  await connectDB();
+  const sessionUser = await getCurrentUser();
+  if (!sessionUser) throw new Error('Нэвтрэх шаардлагатай');
+
+  await User.findByIdAndUpdate(sessionUser.id, {
+    full_name:  data.full_name,
+    phone:      data.phone,
+    ...(data.avatar_url !== undefined && { avatar_url: data.avatar_url }),
+  });
+
+  revalidatePath('/profile/bookings');
+  revalidatePath('/profile/edit');
+}
+
 // ── Bookings ──────────────────────────────────────────────────────────────────
 
-export async function createBooking(formData: BookingFormData): Promise<Booking> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+export async function createBooking(formData: BookingFormData) {
+  await connectDB();
+  const sessionUser = await getCurrentUser();
 
-  const { data: place } = await supabase
-    .from('places')
-    .select('price_per_night, name')
-    .eq('id', formData.place_id)
-    .single();
-
+  const place = await Place.findById(formData.place_id).lean();
   if (!place) throw new Error('Газар олдсонгүй');
   if (!(place as any).price_per_night) throw new Error('Энэ газар захиалах боломжгүй');
 
@@ -77,85 +81,102 @@ export async function createBooking(formData: BookingFormData): Promise<Booking>
 
   const total_amount = ((place as any).price_per_night as number) * nights * formData.guest_count;
 
-  const { data, error } = await (supabase
-    .from('bookings') as any)
-    .insert({
-      place_id:       formData.place_id,
-      guest_name:     formData.guest_name,
-      guest_phone:    formData.guest_phone,
-      guest_email:    formData.guest_email ?? null,
-      guest_count:    formData.guest_count,
-      check_in:       formData.check_in,
-      check_out:      formData.check_out,
-      payment_method: formData.payment_method,
-      notes:          formData.notes ?? null,
-      user_id:        user?.id ?? null,
-      total_amount,
-      payment_status: 'pending',
-      status:         'pending',
-    })
-    .select()
-    .single();
+  const booking = await Booking.create({
+    place_id:       formData.place_id,
+    guest_name:     formData.guest_name,
+    guest_phone:    formData.guest_phone,
+    guest_email:    formData.guest_email ?? null,
+    guest_count:    formData.guest_count,
+    check_in:       formData.check_in,
+    check_out:      formData.check_out,
+    nights,
+    payment_method: formData.payment_method,
+    notes:          formData.notes ?? null,
+    user_id:        sessionUser?.id ?? null,
+    total_amount,
+    payment_status: 'pending',
+    status:         'pending',
+  });
 
-  if (error) throw new Error(error.message);
   revalidatePath('/profile/bookings');
-  return data as Booking;
+
+  const doc = booking.toObject();
+  return {
+    ...doc,
+    id: doc._id.toString(),
+    place_id: doc.place_id,
+    created_at: doc.created_at?.toISOString(),
+    updated_at: doc.updated_at?.toISOString(),
+  };
 }
 
-export async function getUserBookings(): Promise<Booking[]> {
+export async function getUserBookings() {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
-    const { data } = await supabase
-      .from('bookings')
-      .select('*, place:places(id, name, cover_image, type)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    return (data as Booking[]) ?? [];
+    await connectDB();
+    const sessionUser = await getCurrentUser();
+    if (!sessionUser) return [];
+
+    const bookings = await Booking.find({ user_id: sessionUser.id })
+      .sort({ created_at: -1 })
+      .lean();
+
+    // Fetch places for each booking
+    const placeIds = Array.from(new Set(bookings.map((b: any) => b.place_id).filter(Boolean)));
+    const places = await Place.find({ _id: { $in: placeIds } }).lean();
+    const placeMap = new Map(places.map((p: any) => [p._id.toString(), p]));
+
+    return bookings.map((b: any) => {
+      const place = placeMap.get(b.place_id);
+      return {
+        ...b,
+        id:         b._id.toString(),
+        created_at: b.created_at?.toISOString(),
+        updated_at: b.updated_at?.toISOString(),
+        place: place ? {
+          id:          (place as any)._id.toString(),
+          name:        (place as any).name,
+          cover_image: (place as any).cover_image ?? null,
+          type:        (place as any).type,
+        } : null,
+      };
+    });
   } catch {
     return [];
   }
 }
 
 export async function cancelBooking(id: string): Promise<{ refunded: boolean }> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Нэвтрэх шаардлагатай');
+  await connectDB();
+  const sessionUser = await getCurrentUser();
+  if (!sessionUser) throw new Error('Нэвтрэх шаардлагатай');
 
-  const { data: booking } = await (supabase.from('bookings') as any)
-    .select('status, payment_status, payment_method, payment_intent, total_amount')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single();
-
+  const booking = await Booking.findOne({ _id: id, user_id: sessionUser.id }).lean();
   if (!booking) throw new Error('Захиалга олдсонгүй');
-  if (booking.status === 'cancelled') throw new Error('Захиалга аль хэдийн цуцлагдсан байна');
-  if (booking.status === 'completed') throw new Error('Дууссан захиалгыг цуцлах боломжгүй');
+  if ((booking as any).status === 'cancelled') throw new Error('Захиалга аль хэдийн цуцлагдсан байна');
+  if ((booking as any).status === 'completed') throw new Error('Дууссан захиалгыг цуцлах боломжгүй');
 
   let refunded = false;
 
-  if (booking.payment_status === 'paid' && booking.payment_method === 'stripe' && booking.payment_intent) {
+  if (
+    (booking as any).payment_status === 'paid' &&
+    (booking as any).payment_method === 'stripe' &&
+    (booking as any).payment_intent
+  ) {
     const Stripe = (await import('stripe')).default;
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' });
     try {
-      await stripe.refunds.create({ payment_intent: booking.payment_intent });
+      await stripe.refunds.create({ payment_intent: (booking as any).payment_intent });
       refunded = true;
     } catch {
-      // Stripe refund failed — still cancel the booking, admin can handle manually
+      // Stripe refund failed — still cancel, admin handles manually
     }
   }
 
-  const { error } = await (supabase.from('bookings') as any)
-    .update({
-      status: 'cancelled',
-      payment_status: refunded ? 'refunded' : booking.payment_status,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .eq('user_id', user.id);
+  await Booking.findByIdAndUpdate(id, {
+    status: 'cancelled',
+    payment_status: refunded ? 'refunded' : (booking as any).payment_status,
+  });
 
-  if (error) throw new Error(error.message);
   revalidatePath('/profile/bookings');
   return { refunded };
 }
@@ -165,31 +186,24 @@ export async function getBookedDateRanges(
   roomId?: string
 ): Promise<Array<{ check_in: string; check_out: string }>> {
   try {
-    const supabase = await createServerSupabaseClient();
+    await connectDB();
     const today = new Date().toISOString().split('T')[0];
 
-    let bookingQuery = (supabase.from('bookings') as any)
-      .select('check_in, check_out')
-      .eq('place_id', placeId)
-      .in('status', ['pending', 'confirmed'])
-      .gte('check_out', today);
-    if (roomId) bookingQuery = bookingQuery.eq('room_id', roomId);
+    const bookingFilter: any = {
+      place_id: placeId,
+      status:   { $in: ['pending', 'confirmed'] },
+      check_out: { $gte: today },
+    };
+    if (roomId) bookingFilter.room_id = roomId;
 
-    // Also fetch manager-blocked dates
-    const [bookingRes, blocksRes] = await Promise.all([
-      bookingQuery,
-      (supabase.from('availability_blocks') as any)
-        .select('start_date, end_date')
-        .eq('place_id', placeId)
-        .gte('end_date', today)
-        .catch(() => ({ data: [] })),
+    const [bookings, blocks] = await Promise.all([
+      Booking.find(bookingFilter).select('check_in check_out').lean(),
+      AvailabilityBlock.find({ place_id: placeId, end_date: { $gte: today } })
+        .select('start_date end_date').lean(),
     ]);
 
-    const booked = (bookingRes.data ?? []) as Array<{ check_in: string; check_out: string }>;
-    const blocked = ((blocksRes as any).data ?? []).map((b: any) => ({
-      check_in: b.start_date,
-      check_out: b.end_date,
-    }));
+    const booked = bookings.map((b: any) => ({ check_in: b.check_in, check_out: b.check_out }));
+    const blocked = blocks.map((b: any) => ({ check_in: b.start_date, check_out: b.end_date }));
 
     return [...booked, ...blocked];
   } catch {
@@ -197,68 +211,64 @@ export async function getBookedDateRanges(
   }
 }
 
-export async function updateProfile(data: {
-  full_name: string;
-  phone: string;
-  avatar_url?: string;
-}): Promise<void> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Нэвтрэх шаардлагатай');
-
-  const { error } = await (supabase
-    .from('profiles') as any)
-    .update({ ...data, updated_at: new Date().toISOString() })
-    .eq('id', user.id);
-
-  if (error) throw new Error(error.message);
-  revalidatePath('/profile/bookings');
-  revalidatePath('/profile/edit');
-}
-
 // ── Likes ─────────────────────────────────────────────────────────────────────
 
 export async function toggleLike(placeId: string): Promise<boolean> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Нэвтрэх шаардлагатай');
+  await connectDB();
+  const sessionUser = await getCurrentUser();
+  if (!sessionUser) throw new Error('Нэвтрэх шаардлагатай');
 
-  const { data: existing } = await supabase
-    .from('likes')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .eq('place_id', placeId)
-    .maybeSingle();
+  const existing = await Like.findOne({ user_id: sessionUser.id, place_id: placeId });
 
   if (existing) {
-    const { error } = await supabase.from('likes').delete().eq('user_id', user.id).eq('place_id', placeId);
-    if (error) throw new Error(error.message);
+    await Like.deleteOne({ user_id: sessionUser.id, place_id: placeId });
     revalidatePath('/');
     revalidatePath('/places');
     revalidatePath(`/places/${placeId}`);
-    revalidatePath('/profile/favorites');
+    revalidatePath('/profile/bookings');
     return false;
   } else {
-    const { error } = await (supabase.from('likes') as any).insert({ user_id: user.id, place_id: placeId });
-    if (error) throw new Error(error.message);
+    await Like.create({ user_id: sessionUser.id, place_id: placeId });
     revalidatePath('/');
     revalidatePath('/places');
     revalidatePath(`/places/${placeId}`);
-    revalidatePath('/profile/favorites');
+    revalidatePath('/profile/bookings');
     return true;
   }
 }
 
 export async function getUserLikes(): Promise<string[]> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
-    const { data } = await supabase
-      .from('likes')
-      .select('place_id')
-      .eq('user_id', user.id);
-    return (data ?? []).map((l: { place_id: string }) => l.place_id);
+    await connectDB();
+    const sessionUser = await getCurrentUser();
+    if (!sessionUser) return [];
+    const likes = await Like.find({ user_id: sessionUser.id }).select('place_id').lean();
+    return likes.map((l: any) => l.place_id);
+  } catch {
+    return [];
+  }
+}
+
+export async function getUserLikedPlaces() {
+  try {
+    await connectDB();
+    const sessionUser = await getCurrentUser();
+    if (!sessionUser) return [];
+
+    const likes = await Like.find({ user_id: sessionUser.id })
+      .sort({ created_at: -1 })
+      .lean();
+
+    const placeIds = likes.map((l: any) => l.place_id).filter(Boolean);
+    const places = await Place.find({ _id: { $in: placeIds }, is_published: true }).lean();
+
+    return places.map((p: any) => ({
+      ...p,
+      id:         p._id.toString(),
+      images:     p.images ?? [],
+      created_at: p.created_at?.toISOString(),
+      updated_at: p.updated_at?.toISOString(),
+    }));
   } catch {
     return [];
   }
@@ -272,30 +282,35 @@ export async function createReview(
   title: string,
   body: string
 ): Promise<void> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Нэвтрэх шаардлагатай');
-  const { error } = await (supabase
-    .from('reviews') as any)
-    .insert({ place_id: placeId, user_id: user.id, rating, title, body });
-  if (error) throw new Error(error.message);
+  await connectDB();
+  const sessionUser = await getCurrentUser();
+  if (!sessionUser) throw new Error('Нэвтрэх шаардлагатай');
+
+  const userDoc = await User.findById(sessionUser.id).lean();
+
+  await Review.create({
+    place_id: placeId,
+    user_id:  sessionUser.id,
+    rating,
+    title,
+    body,
+    user: {
+      full_name:  (userDoc as any)?.full_name ?? sessionUser.name ?? '',
+      avatar_url: (userDoc as any)?.avatar_url ?? sessionUser.image ?? '',
+    },
+  });
+
+  // Update place rating
+  const reviews = await Review.find({ place_id: placeId }).select('rating').lean();
+  const count = reviews.length;
+  const avg = count > 0
+    ? reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / count
+    : 0;
+
+  await Place.findByIdAndUpdate(placeId, {
+    rating_avg:   Math.round(avg * 10) / 10,
+    rating_count: count,
+  });
+
   revalidatePath(`/places/${placeId}`);
-}
-
-// ── Liked Places ──────────────────────────────────────────────────────────────
-
-export async function getUserLikedPlaces(): Promise<Place[]> {
-  try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
-    const { data } = await supabase
-      .from('likes')
-      .select('place:places(*)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    return (data ?? []).map((l: any) => l.place).filter(Boolean) as Place[];
-  } catch {
-    return [];
-  }
 }

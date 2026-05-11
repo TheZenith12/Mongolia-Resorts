@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase-server';
+import { connectDB } from '@/lib/mongodb';
+import { Booking } from '@/lib/models';
 
 async function getQPayToken(): Promise<string> {
   const res = await fetch('https://merchant.qpay.mn/v2/auth/token', {
@@ -39,12 +40,11 @@ export async function GET(req: NextRequest) {
     const paid = data.count > 0 && data.paid_amount > 0;
 
     if (paid) {
-      const supabase = createAdminClient();
-     await (supabase.from('bookings') as any).update({
-  payment_status: 'paid',
-  status: 'confirmed',
-  updated_at: new Date().toISOString(),
-}).eq('id', bookingId);
+      await connectDB();
+      await Booking.findByIdAndUpdate(bookingId, {
+        payment_status: 'paid',
+        status:         'confirmed',
+      });
     }
 
     return NextResponse.json({ paid, data });
