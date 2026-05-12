@@ -1,9 +1,42 @@
 import Link from 'next/link';
-import { Leaf, Phone, Mail, MapPin, Facebook, Instagram } from 'lucide-react';
+import { Leaf, Phone, Mail, MapPin, Facebook, Instagram, Plus, ArrowRight } from 'lucide-react';
 
 export default function Footer() {
   return (
     <footer className="bg-forest-950 text-forest-300 mt-24">
+
+      {/* ── CTA Banner ──────────────────────────────────── */}
+      <div className="border-b border-forest-800">
+        <div className="page-container py-14">
+          <div className="bg-gradient-to-br from-forest-800 to-forest-900 rounded-3xl p-8 sm:p-12 flex flex-col sm:flex-row items-center gap-8">
+            <div className="flex-1 text-center sm:text-left">
+              <div className="inline-flex items-center gap-2 bg-amber-500/20 text-amber-400 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+                <Plus size={12} /> Шинэ газар нэмэх
+              </div>
+              <h2 className="font-display text-2xl sm:text-3xl font-semibold text-white mb-3 leading-tight">
+                Та мэддэг үзэсгэлэнт газраа<br className="hidden sm:block" /> бусдад танилцуулаарай
+              </h2>
+              <p className="text-forest-300 text-sm sm:text-base leading-relaxed max-w-lg">
+                Тань мэддэг байгалийн үзэсгэлэнт газар, амралтын газар энд байхгүй байна уу?
+                Та өөрийн мэдлэгийг хуваалцаж, бусад аялагчдад туслаарай.
+                Газрын мэдээлэл, зураг нэмж, бүх монголчуудад нээлттэй болгоорой.
+              </p>
+            </div>
+            <div className="flex-shrink-0 flex flex-col sm:items-end gap-3">
+              <Link
+                href="/places/submit"
+                className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-semibold px-7 py-3.5 rounded-2xl transition-colors text-sm whitespace-nowrap"
+              >
+                <Plus size={16} /> Газар нэмэх
+              </Link>
+              <p className="text-xs text-forest-500 text-center sm:text-right">
+                Админ хянасны дараа нийтлэгдэнэ
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="page-container py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Brand */}

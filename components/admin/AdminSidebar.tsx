@@ -26,19 +26,34 @@ export default function AdminSidebar({
   const isSuperAdmin = profile.role === 'super_admin';
   const isManager = profile.role === 'manager';
   const [chatUnread, setChatUnread] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
-    const fetch_ = async () => {
+    const fetchChat = async () => {
       try {
         const res = await fetch('/api/chat/unread');
         const d = await res.json();
         setChatUnread(d.count ?? 0);
       } catch { /* ignore */ }
     };
-    fetch_();
-    const t = setInterval(fetch_, 15_000);
+    fetchChat();
+    const t = setInterval(fetchChat, 15_000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    const fetchPending = async () => {
+      try {
+        const res = await fetch('/api/admin/pending-count');
+        const d = await res.json();
+        setPendingCount(d.count ?? 0);
+      } catch { /* ignore */ }
+    };
+    fetchPending();
+    const t = setInterval(fetchPending, 30_000);
+    return () => clearInterval(t);
+  }, [isSuperAdmin]);
 
   // Super admin: бүгдийг харна
   // Manager: зөвхөн өөрийн газар
@@ -131,6 +146,11 @@ export default function AdminSidebar({
                     {item.href === '/admin/chat' && chatUnread > 0 && (
                       <span className="px-1.5 py-0.5 bg-amber-500 text-white text-[9px] rounded-full font-bold leading-none">
                         {chatUnread > 9 ? '9+' : chatUnread}
+                      </span>
+                    )}
+                    {item.href === '/admin/places' && pendingCount > 0 && (
+                      <span className="px-1.5 py-0.5 bg-amber-500 text-white text-[9px] rounded-full font-bold leading-none">
+                        {pendingCount > 9 ? '9+' : pendingCount}
                       </span>
                     )}
                     {active && <ChevronRight size={13} className="text-forest-400" />}

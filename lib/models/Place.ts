@@ -22,8 +22,15 @@ const PlaceSchema = new Schema({
   rating_avg:      { type: Number, default: 0 },
   rating_count:    { type: Number, default: 0 },
   view_count:      { type: Number, default: 0 },
+  like_count:      { type: Number, default: 0 },
   manager_id:      String,
   created_by:      String,
+  // Хэрэглэгчийн илгээсэн газар
+  status:              { type: String, enum: ['approved', 'pending', 'rejected'], default: 'approved' },
+  submitted_by:        String,   // user_id
+  submitted_by_name:   String,
+  submitted_by_email:  String,
+  reject_reason:       String,
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 PlaceSchema.index({ province: 1 });

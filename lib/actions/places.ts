@@ -350,3 +350,59 @@ export async function togglePublish(id: string, isPublished: boolean) {
   revalidatePath('/admin/places');
   revalidatePath(`/places/${id}`);
 }
+
+// ── Хэрэглэгч газар илгээх ────────────────────────────────────────────────────
+export async function submitPlace(data: {
+  name: string;
+  type: 'nature' | 'resort';
+  province: string;
+  address?: string;
+  description: string;
+  phone?: string;
+  website?: string;
+  cover_image?: string;
+  images?: string[];
+}) {
+  await connectDB();
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Нэвтрэх шаардлагатай');
+
+  await Place.create({
+    ...data,
+    is_published: false,
+    is_featured:  false,
+    status:       'pending',
+    submitted_by:       user.id,
+    submitted_by_name:  user.name,
+    submitted_by_email: user.email,
+    rating_avg:   0,
+    rating_count: 0,
+    view_count:   0,
+    like_count:   0,
+  });
+
+  revalidatePath('/admin/places');
+}
+
+// ── Admin: газар зөвшөөрөх / татгалзах ───────────────────────────────────────
+export async function reviewPlace(id: string, action: 'approve' | 'reject', reason?: string) {
+  const { role } = await getAuthContext();
+  if (role !== 'super_admin') throw new Error('Эрх хүрэлцэхгүй');
+
+  if (action === 'approve') {
+    await Place.findByIdAndUpdate(id, {
+      status:       'approved',
+      is_published: true,
+      reject_reason: null,
+    });
+  } else {
+    await Place.findByIdAndUpdate(id, {
+      status:        'rejected',
+      is_published:  false,
+      reject_reason: reason ?? 'Шалтгаан заагдаагүй',
+    });
+  }
+
+  revalidatePath('/admin/places');
+  revalidatePath(`/places/${id}`);
+}
