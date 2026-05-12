@@ -92,7 +92,7 @@ export default function PlacesGrid({ places, likedIds, pagination, searchParams 
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
         {places.map((place, i) => (
           <div
             key={place.id}

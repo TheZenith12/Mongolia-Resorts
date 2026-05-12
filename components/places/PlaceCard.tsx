@@ -20,7 +20,7 @@ export default function PlaceCard({ place, liked = false, onLike, likeLoading = 
   return (
     <article className={cn('card card-hover group relative', className)}>
       {/* Image */}
-      <div className="relative h-52 overflow-hidden bg-forest-100">
+      <div className="relative h-32 sm:h-52 overflow-hidden bg-forest-100">
         {place.cover_image ? (
           <Image
             src={place.cover_image}
@@ -42,7 +42,7 @@ export default function PlaceCard({ place, liked = false, onLike, likeLoading = 
 
         {/* Type badge */}
         <div className={cn(
-          'absolute top-3 left-3 badge text-[11px]',
+          'absolute top-2 left-2 badge text-[10px] sm:top-3 sm:left-3 sm:text-[11px]',
           isResort
             ? 'bg-amber-50/90 text-amber-800 border-amber-200/60'
             : 'bg-forest-50/90 text-forest-700 border-forest-200/60'
@@ -56,7 +56,7 @@ export default function PlaceCard({ place, liked = false, onLike, likeLoading = 
             onClick={(e) => { e.preventDefault(); if (!likeLoading) onLike(place.id); }}
             disabled={likeLoading}
             className={cn(
-              'absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center',
+              'absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center',
               'transition-all duration-200 backdrop-blur-sm',
               likeLoading ? 'opacity-60 cursor-not-allowed bg-white/80' :
               liked
@@ -80,49 +80,40 @@ export default function PlaceCard({ place, liked = false, onLike, likeLoading = 
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <h3 className="font-display text-xl font-semibold text-forest-900 leading-tight mb-1.5 line-clamp-1">
+      <div className="p-2.5 sm:p-4">
+        <h3 className="font-display text-sm sm:text-xl font-semibold text-forest-900 leading-tight mb-1 sm:mb-1.5 line-clamp-2">
           {place.name}
         </h3>
 
         {/* Location */}
         {place.province && (
-          <div className="flex items-center gap-1.5 text-forest-500 text-xs mb-2">
-            <MapPin size={12} />
-            <span>{place.province}{place.district ? `, ${place.district}` : ''}</span>
+          <div className="flex items-center gap-1 text-forest-500 text-[10px] sm:text-xs mb-1.5 sm:mb-2">
+            <MapPin size={10} className="flex-shrink-0" />
+            <span className="truncate">{place.province}</span>
           </div>
         )}
 
-        {/* Description */}
+        {/* Description — мобайлд нуунa */}
         {place.short_desc && (
-          <p className="text-forest-600 text-sm leading-relaxed line-clamp-2 mb-3">
+          <p className="hidden sm:block text-forest-600 text-sm leading-relaxed line-clamp-2 mb-3">
             {place.short_desc}
           </p>
         )}
 
         {/* Stats row */}
-        <div className="flex items-center justify-between pt-3 border-t border-forest-100">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-forest-100">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {/* Rating */}
-            <div className="flex items-center gap-1 text-xs">
-              <Star size={12} className="text-amber-400 fill-amber-400" />
+            <div className="flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs">
+              <Star size={10} className="text-amber-400 fill-amber-400" />
               <span className="font-semibold text-forest-800">
                 {place.rating_avg > 0 ? place.rating_avg.toFixed(1) : '—'}
               </span>
-              {place.rating_count > 0 && (
-                <span className="text-forest-400">({place.rating_count})</span>
-              )}
-            </div>
-
-            {/* Views */}
-            <div className="flex items-center gap-1 text-xs text-forest-400">
-              <Eye size={12} />
-              <span>{place.view_count.toLocaleString()}</span>
             </div>
 
             {/* Likes */}
-            <div className="flex items-center gap-1 text-xs text-forest-400">
-              <Heart size={12} />
+            <div className="flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs text-forest-400">
+              <Heart size={10} />
               <span>{place.like_count}</span>
             </div>
           </div>
@@ -130,10 +121,10 @@ export default function PlaceCard({ place, liked = false, onLike, likeLoading = 
           {/* CTA */}
           <Link
             href={`/places/${place.id}`}
-            className="flex items-center gap-1 text-forest-700 text-xs font-medium hover:text-forest-900 transition-colors group/link"
+            className="flex items-center gap-0.5 text-forest-700 text-[10px] sm:text-xs font-medium hover:text-forest-900 transition-colors"
           >
-            Дэлгэрэнгүй
-            <ArrowRight size={12} className="transition-transform group-hover/link:translate-x-0.5" />
+            <span className="hidden sm:inline">Дэлгэрэнгүй</span>
+            <ArrowRight size={11} />
           </Link>
         </div>
       </div>
@@ -145,8 +136,8 @@ export default function PlaceCard({ place, liked = false, onLike, likeLoading = 
 export function PlaceCardSkeleton() {
   return (
     <div className="card overflow-hidden">
-      <div className="h-52 shimmer-loading" />
-      <div className="p-4 space-y-3">
+      <div className="h-32 sm:h-52 shimmer-loading" />
+      <div className="p-2.5 sm:p-4 space-y-2 sm:space-y-3">
         <div className="h-6 w-3/4 shimmer-loading rounded-lg" />
         <div className="h-4 w-1/2 shimmer-loading rounded-lg" />
         <div className="h-4 w-full shimmer-loading rounded-lg" />
