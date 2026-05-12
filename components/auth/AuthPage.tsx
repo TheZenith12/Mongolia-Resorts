@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, Leaf, Mail, Lock, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Leaf, Mail, Lock, User, ArrowLeft } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { toast } from "react-hot-toast";
 
 type Mode = "login" | "register";
 
 export default function AuthPage({ mode = "login" }: { mode?: Mode }) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -101,6 +103,7 @@ export default function AuthPage({ mode = "login" }: { mode?: Mode }) {
       {/* Right: Form */}
       <div className="flex items-center justify-center p-8 bg-cream">
         <div className="w-full max-w-md">
+          {/* Mobile logo */}
           <Link href="/" className="flex items-center gap-2.5 mb-8 lg:hidden">
             <div className="w-9 h-9 bg-forest-700 rounded-xl flex items-center justify-center">
               <Leaf size={18} className="text-amber-300" />
@@ -109,6 +112,15 @@ export default function AuthPage({ mode = "login" }: { mode?: Mode }) {
               Монгол Нутаг
             </span>
           </Link>
+
+          {/* Буцах товч */}
+          <button
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-1.5 text-sm text-forest-500 hover:text-forest-700 transition-colors mb-6"
+          >
+            <ArrowLeft size={15} />
+            Буцах
+          </button>
 
           <h1 className="font-display text-4xl font-semibold text-forest-900 mb-2">
             {mode === "login" ? "Нэвтрэх" : "Бүртгүүлэх"}

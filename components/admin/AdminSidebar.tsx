@@ -1,12 +1,11 @@
 'use client';
-// components/admin/AdminSidebar.tsx
-// REPLACE the entire file with this
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, MapPin, CalendarCheck, Users,
-  Star, Settings, LogOut, Leaf, ChevronRight, Building2, CalendarX,
+  Star, Settings, LogOut, Leaf, ChevronRight, Building2, CalendarX, MessageCircle,
 } from 'lucide-react';
 import { cn, getInitials } from '@/lib/utils';
 import { signOut } from '@/lib/actions/auth';
@@ -26,6 +25,20 @@ export default function AdminSidebar({
   const pathname = usePathname();
   const isSuperAdmin = profile.role === 'super_admin';
   const isManager = profile.role === 'manager';
+  const [chatUnread, setChatUnread] = useState(0);
+
+  useEffect(() => {
+    const fetch_ = async () => {
+      try {
+        const res = await fetch('/api/chat/unread');
+        const d = await res.json();
+        setChatUnread(d.count ?? 0);
+      } catch { /* ignore */ }
+    };
+    fetch_();
+    const t = setInterval(fetch_, 15_000);
+    return () => clearInterval(t);
+  }, []);
 
   // Super admin: бүгдийг харна
   // Manager: зөвхөн өөрийн газар
@@ -43,8 +56,9 @@ export default function AdminSidebar({
         {
           label: 'Удирдлага',
           items: [
-            { href: '/admin/users',    icon: Users,    label: 'Хэрэглэгчид' },
-            { href: '/admin/settings', icon: Settings, label: 'Тохиргоо' },
+            { href: '/admin/chat',     icon: MessageCircle, label: 'Чат' },
+            { href: '/admin/users',    icon: Users,         label: 'Хэрэглэгчид' },
+            { href: '/admin/settings', icon: Settings,      label: 'Тохиргоо' },
           ],
         },
       ]
@@ -53,7 +67,8 @@ export default function AdminSidebar({
         {
           label: 'Миний газар',
           items: [
-            { href: '/admin',          icon: LayoutDashboard, label: 'Самбар' },
+            { href: '/admin',       icon: LayoutDashboard, label: 'Самбар' },
+            { href: '/admin/chat',  icon: MessageCircle,   label: 'Чат' },
             ...(assignedPlaceId
               ? [
                   { href: `/admin/places/${assignedPlaceId}/edit`, icon: Building2,    label: assignedPlaceName ?? 'Миний газар' },
@@ -113,6 +128,11 @@ export default function AdminSidebar({
                   >
                     <Icon size={17} />
                     <span className="flex-1 truncate">{item.label}</span>
+                    {item.href === '/admin/chat' && chatUnread > 0 && (
+                      <span className="px-1.5 py-0.5 bg-amber-500 text-white text-[9px] rounded-full font-bold leading-none">
+                        {chatUnread > 9 ? '9+' : chatUnread}
+                      </span>
+                    )}
                     {active && <ChevronRight size={13} className="text-forest-400" />}
                   </Link>
                 );

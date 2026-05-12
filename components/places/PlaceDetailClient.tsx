@@ -88,7 +88,7 @@ export default function PlaceDetailClient({
 
       {/* Image gallery */}
       <div className="page-container mb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 h-96 lg:h-[28rem]">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 h-56 sm:h-72 lg:h-[28rem]">
           <div className="relative lg:col-span-3 rounded-2xl overflow-hidden bg-forest-100">
             {allImages[imageIndex] ? (
               <Image
@@ -161,11 +161,11 @@ export default function PlaceDetailClient({
       </div>
 
       {/* Main content */}
-      <div className="page-container pb-20">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+      <div className="page-container pb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
           <div className="lg:col-span-2">
             {/* Header */}
-            <div className="flex items-start justify-between gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
               <div>
                 <div
                   className={cn(
@@ -177,7 +177,7 @@ export default function PlaceDetailClient({
                 >
                   {isResort ? "🏕" : "🌿"} {getPlaceTypeLabel(place.type)}
                 </div>
-                <h1 className="font-display text-4xl lg:text-5xl font-semibold text-forest-950 leading-tight">
+                <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-semibold text-forest-950 leading-tight">
                   {place.name}
                 </h1>
                 {place.address && (
@@ -372,9 +372,9 @@ export default function PlaceDetailClient({
             />
           </div>
 
-          {/* Booking panel */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-24">
+          {/* Booking panel — mobile: агуулгын дараа, desktop: sticky sidebar */}
+          <div className="lg:col-span-1 order-first lg:order-last">
+            <div className="lg:sticky lg:top-24">
               <BookingPanel place={place} profile={profile} />
             </div>
           </div>

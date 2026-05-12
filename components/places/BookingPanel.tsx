@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, Users, CreditCard, Smartphone, ArrowRight, Lock, Loader2 } from 'lucide-react';
+import { Calendar, Users, CreditCard, Smartphone, ArrowRight, Lock, Loader2, User, Phone } from 'lucide-react';
 import { formatPrice, calculateNights } from '@/lib/utils';
 import { createBooking, getBookedDateRanges } from '@/lib/actions/auth';
 import { toast } from 'react-hot-toast';
@@ -22,39 +22,40 @@ interface Room {
 export default function BookingPanel({ place, profile }: any) {
   const router = useRouter();
   const isResort = place.type === 'resort';
-  const [rooms, setRooms] = useState<Room[]>([]);
+
+  const [rooms, setRooms]             = useState<Room[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+
   const [checkIn, setCheckIn]   = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [guests, setGuests]     = useState(1);
   const [payMethod, setPayMethod] = useState<'stripe' | 'qpay'>('qpay');
   const [loading, setLoading]   = useState(false);
 
+  // Зочны мэдээлэл — profile-аас авч, засах боломжтой
+  const [guestName,  setGuestName]  = useState(profile?.full_name ?? '');
+  const [guestPhone, setGuestPhone] = useState(profile?.phone ?? '');
+
   const [bookedRanges, setBookedRanges] = useState<Array<{ check_in: string; check_out: string }>>([]);
   const [dateConflict, setDateConflict] = useState(false);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today  = new Date().toISOString().split('T')[0];
   const nights = checkIn && checkOut ? calculateNights(checkIn, checkOut) : 0;
-  const price = selectedRoom?.price_per_night ?? place.price_per_night ?? 0;
-  const total = nights * price * (selectedRoom ? 1 : guests);
+  const price  = selectedRoom?.price_per_night ?? place.price_per_night ?? 0;
+  const total  = nights * price * (selectedRoom ? 1 : guests);
 
-  function hasConflict(cin: string, cout: string, roomId?: string): boolean {
-    return bookedRanges.some(r => {
-      if (roomId && (r as any).room_id && (r as any).room_id !== roomId) return false;
-      return cin < r.check_out && cout > r.check_in;
-    });
+  function hasConflict(cin: string, cout: string): boolean {
+    return bookedRanges.some(r => cin < r.check_out && cout > r.check_in);
   }
 
   useEffect(() => {
     if (!isResort) return;
     fetch(`/api/places/${place.id}/rooms`)
       .then(r => r.json())
-      .then(data => {
-        setRooms((Array.isArray(data) ? data : []) as Room[]);
-        setLoadingRooms(false);
-      })
-      .catch(() => setLoadingRooms(false));
+      .then(data => { setRooms(Array.isArray(data) ? data : []); })
+      .catch(() => {})
+      .finally(() => setLoadingRooms(false));
   }, [place.id, isResort]);
 
   useEffect(() => {
@@ -62,13 +63,10 @@ export default function BookingPanel({ place, profile }: any) {
   }, [place.id, selectedRoom?.id]);
 
   useEffect(() => {
-    if (checkIn && checkOut) {
-      setDateConflict(hasConflict(checkIn, checkOut, selectedRoom?.id));
-    } else {
-      setDateConflict(false);
-    }
+    if (checkIn && checkOut) setDateConflict(hasConflict(checkIn, checkOut));
+    else setDateConflict(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checkIn, checkOut, bookedRanges, selectedRoom?.id]);
+  }, [checkIn, checkOut, bookedRanges]);
 
   async function handleBook() {
     if (!profile) {
@@ -76,8 +74,10 @@ export default function BookingPanel({ place, profile }: any) {
       router.push(`/auth/login?redirect=/places/${place.id}`);
       return;
     }
+    if (!guestName.trim())  { toast.error('Нэрээ оруулна уу'); return; }
+    if (!guestPhone.trim()) { toast.error('Утасны дугаараа оруулна уу'); return; }
     if (!checkIn || !checkOut) { toast.error('Огноо сонгоно уу'); return; }
-    if (nights < 1) { toast.error('Буцах огноо буруу байна'); return; }
+    if (nights < 1)  { toast.error('Буцах огноо буруу байна'); return; }
     if (rooms.length > 0 && !selectedRoom) { toast.error('Өрөө сонгоно уу'); return; }
     if (dateConflict) { toast.error('Сонгосон огноонд захиалга аль хэдийн байна'); return; }
 
@@ -85,8 +85,8 @@ export default function BookingPanel({ place, profile }: any) {
     try {
       const booking = await createBooking({
         place_id:       place.id,
-        guest_name:     profile.full_name ?? 'Хэрэглэгч',
-        guest_phone:    profile.phone ?? '',
+        guest_name:     guestName.trim(),
+        guest_phone:    guestPhone.trim(),
         guest_email:    profile.email,
         guest_count:    selectedRoom ? selectedRoom.capacity : guests,
         check_in:       checkIn,
@@ -116,16 +116,21 @@ export default function BookingPanel({ place, profile }: any) {
         <p className="text-forest-600 text-sm leading-relaxed mb-4">
           Энэ байгалийн үзэсгэлэнт газар нийтийн хэрэглээнд нээлттэй.
         </p>
-        <a href={`https://www.google.com/maps/dir/?api=1&destination=${place.latitude},${place.longitude}`}
-          target="_blank" rel="noopener noreferrer" className="btn-primary w-full justify-center">
-          Замын заалт авах <ArrowRight size={15} />
-        </a>
+        {place.latitude && place.longitude && (
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${place.latitude},${place.longitude}`}
+            target="_blank" rel="noopener noreferrer"
+            className="btn-primary w-full justify-center"
+          >
+            Замын заалт авах <ArrowRight size={15} />
+          </a>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="card p-6">
+    <div className="card p-5 sm:p-6">
       <h3 className="font-display text-xl font-semibold text-forest-900 mb-4">Захиалах</h3>
 
       {/* Room selection */}
@@ -136,34 +141,28 @@ export default function BookingPanel({ place, profile }: any) {
       ) : rooms.length > 0 ? (
         <div className="mb-4">
           <label className="block text-xs font-medium text-forest-500 uppercase tracking-wide mb-2">Өрөө сонгох</label>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
             {rooms.map(room => (
-              <button key={room.id} type="button" onClick={() => setSelectedRoom(selectedRoom?.id === room.id ? null : room)}
+              <button
+                key={room.id} type="button"
+                onClick={() => setSelectedRoom(selectedRoom?.id === room.id ? null : room)}
                 className={`w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
                   selectedRoom?.id === room.id
                     ? 'border-forest-600 bg-forest-50'
                     : 'border-forest-100 hover:border-forest-300 bg-white'
-                }`}>
+                }`}
+              >
                 {room.cover_image ? (
-                  <img src={room.cover_image} alt={room.name} className="w-14 h-12 rounded-lg object-cover flex-shrink-0" />
+                  <img src={room.cover_image} alt={room.name} className="w-12 h-10 rounded-lg object-cover flex-shrink-0" />
                 ) : (
-                  <div className="w-14 h-12 rounded-lg bg-forest-100 flex items-center justify-center text-xl flex-shrink-0">🛏</div>
+                  <div className="w-12 h-10 rounded-lg bg-forest-100 flex items-center justify-center text-lg flex-shrink-0">🛏</div>
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-1">
-                    <span className="font-medium text-forest-900 text-sm">{room.name}</span>
+                    <span className="font-medium text-forest-900 text-sm leading-tight">{room.name}</span>
                     <span className="font-bold text-amber-600 text-sm flex-shrink-0">{formatPrice(room.price_per_night)}</span>
                   </div>
-                  <div className="text-xs text-forest-500 mt-0.5">
-                    👥 {room.capacity} хүн · 🏨 {room.quantity} өрөө
-                  </div>
-                  {room.amenities.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {room.amenities.slice(0, 3).map(a => (
-                        <span key={a} className="text-[10px] bg-forest-50 text-forest-500 px-1.5 py-0.5 rounded">{a}</span>
-                      ))}
-                    </div>
-                  )}
+                  <div className="text-xs text-forest-500 mt-0.5">👥 {room.capacity} хүн · 🏨 {room.quantity} өрөө</div>
                 </div>
                 {selectedRoom?.id === room.id && (
                   <div className="w-5 h-5 rounded-full bg-forest-600 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -178,11 +177,43 @@ export default function BookingPanel({ place, profile }: any) {
         </div>
       ) : (
         <div className="mb-4 p-3 bg-forest-50 rounded-xl">
-          <div className="text-sm font-semibold text-forest-900">{formatPrice(place.price_per_night)}<span className="text-forest-400 font-normal text-xs"> / шөнө</span></div>
+          <div className="text-sm font-semibold text-forest-900">
+            {formatPrice(place.price_per_night)}<span className="text-forest-400 font-normal text-xs"> / шөнө</span>
+          </div>
         </div>
       )}
 
       <div className="space-y-3 mb-4">
+        {/* Guest info */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs font-medium text-forest-500 mb-1 block">Нэр</label>
+            <div className="relative">
+              <User size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-forest-400 pointer-events-none" />
+              <input
+                type="text"
+                value={guestName}
+                onChange={e => setGuestName(e.target.value)}
+                placeholder="Таны нэр"
+                className="input-field pl-8 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-forest-500 mb-1 block">Утас</label>
+            <div className="relative">
+              <Phone size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-forest-400 pointer-events-none" />
+              <input
+                type="tel"
+                value={guestPhone}
+                onChange={e => setGuestPhone(e.target.value)}
+                placeholder="99xxxxxx"
+                className="input-field pl-8 py-2 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Dates */}
         <div className="grid grid-cols-2 gap-2">
           <div>
@@ -203,7 +234,7 @@ export default function BookingPanel({ place, profile }: any) {
           </div>
         </div>
 
-        {/* Guests — only show if no room selected */}
+        {/* Guests — only if no room */}
         {!selectedRoom && (
           <div>
             <label className="text-xs font-medium text-forest-500 mb-1 block">Зочдын тоо</label>
@@ -217,15 +248,14 @@ export default function BookingPanel({ place, profile }: any) {
           </div>
         )}
 
-        {/* Date conflict warning */}
+        {/* Date conflict */}
         {dateConflict && (
           <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">
-            <span className="text-base">⚠️</span>
-            Сонгосон огноонд аль хэдийн захиалга байна. Өөр огноо сонгоно уу.
+            ⚠️ Сонгосон огноонд аль хэдийн захиалга байна. Өөр огноо сонгоно уу.
           </div>
         )}
 
-        {/* Payment */}
+        {/* Payment method */}
         <div>
           <label className="text-xs font-medium text-forest-500 mb-2 block">Төлбөрийн хэлбэр</label>
           <div className="grid grid-cols-2 gap-2">
@@ -246,9 +276,9 @@ export default function BookingPanel({ place, profile }: any) {
         </div>
       </div>
 
-      {/* Price breakdown */}
+      {/* Price summary */}
       {nights > 0 && price > 0 && (
-        <div className="bg-forest-50 rounded-xl p-3 mb-4 text-sm space-y-1">
+        <div className="bg-forest-50 rounded-xl p-3 mb-4 text-sm space-y-1.5">
           {selectedRoom && (
             <div className="flex justify-between text-forest-600">
               <span>{selectedRoom.name}</span>
@@ -264,7 +294,11 @@ export default function BookingPanel({ place, profile }: any) {
         </div>
       )}
 
-      <button onClick={handleBook} disabled={loading || dateConflict} className="btn-amber w-full py-3.5 disabled:opacity-50 disabled:cursor-not-allowed">
+      <button
+        onClick={handleBook}
+        disabled={loading || dateConflict}
+        className="btn-amber w-full py-3.5 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
         {loading ? (
           <span className="flex items-center gap-2">
             <Loader2 size={16} className="animate-spin" /> Боловсруулж байна...

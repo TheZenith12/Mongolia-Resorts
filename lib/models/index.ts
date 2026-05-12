@@ -8,3 +8,5 @@ export { Message } from './Message';
 export { AvailabilityBlock } from './AvailabilityBlock';
 export { SiteSettings } from './SiteSettings';
 export { ManagerAssignment } from './ManagerAssignment';
+export { Conversation } from './Conversation';
+export { ChatMessage } from './ChatMessage';

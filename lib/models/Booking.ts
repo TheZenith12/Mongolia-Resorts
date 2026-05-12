@@ -5,7 +5,7 @@ const BookingSchema = new Schema({
   room_id:           String,
   user_id:           String,
   guest_name:        { type: String, required: true },
-  guest_phone:       { type: String, required: true },
+  guest_phone:       { type: String, default: '' },
   guest_email:       String,
   guest_count:       { type: Number, default: 1 },
   check_in:          { type: String, required: true },
