@@ -11,18 +11,20 @@ export async function GET(req: NextRequest) {
     const docs = await Place.find({
       is_published: true,
       $or: [
-        { name:     { $regex: q, $options: 'i' } },
-        { province: { $regex: q, $options: 'i' } },
-        { address:  { $regex: q, $options: 'i' } },
+        { name:       { $regex: q, $options: 'i' } },
+        { short_desc: { $regex: q, $options: 'i' } },
+        { province:   { $regex: q, $options: 'i' } },
+        { address:    { $regex: q, $options: 'i' } },
+        { district:   { $regex: q, $options: 'i' } },
       ],
     })
-      .select('_id name type province cover_image')
+      .select('_id slug name type province cover_image')
       .sort({ rating_avg: -1 })
-      .limit(6)
+      .limit(8)
       .lean();
 
     const data = docs.map((p: any) => ({
-      id:          p._id.toString(),
+      id:          p.slug ?? p._id.toString(),
       name:        p.name,
       type:        p.type,
       province:    p.province ?? null,
