@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 3600; // 1 цаг тутамд шинэчлэнэ
+
 import { MetadataRoute } from 'next';
 import { connectDB } from '@/lib/mongodb';
 import { Place } from '@/lib/models';
