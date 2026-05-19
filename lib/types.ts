@@ -25,6 +25,7 @@ export interface Profile {
 
 export interface Place {
   id: string;
+  slug?: string | null;
   type: PlaceType;
   name: string;
   description: string | null;

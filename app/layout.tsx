@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Toaster } from 'react-hot-toast';
 import './globals.css';
-
-const BASE_URL = 'https://mongolia-reso.vercel.app/'; // Custom domain тавьсны дараа өөрчил
+import { BASE_URL, SITE_NAME } from '@/lib/config';
 
 export const viewport: Viewport = {
   themeColor: '#1a4731',

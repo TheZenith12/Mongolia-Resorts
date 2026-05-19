@@ -3,6 +3,7 @@ import mongoose, { Schema, model, models } from 'mongoose';
 const PlaceSchema = new Schema({
   type:            { type: String, enum: ['resort', 'nature'], required: true },
   name:            { type: String, required: true },
+  slug:            { type: String, unique: true, sparse: true },
   description:     String,
   short_desc:      String,
   price_per_night: Number,
@@ -33,6 +34,7 @@ const PlaceSchema = new Schema({
   reject_reason:       String,
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
+PlaceSchema.index({ slug: 1 });
 PlaceSchema.index({ province: 1 });
 PlaceSchema.index({ type: 1 });
 PlaceSchema.index({ is_published: 1, rating_avg: -1 });

@@ -7,6 +7,22 @@ import type { PlaceFormData, PlacesFilter, PaginatedResponse, SiteStats } from '
 import type { Place as PlaceType } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { toSlug } from '@/lib/slug';
+
+// ── Slug хэрэгслүүд ────────────────────────────────────────────────────────────
+async function generateUniqueSlug(name: string, excludeId?: string): Promise<string> {
+  const base = toSlug(name);
+  let slug = base;
+  let suffix = 2;
+  while (true) {
+    const q: any = { slug };
+    if (excludeId) q._id = { $ne: excludeId };
+    const existing = await Place.findOne(q).select('_id').lean();
+    if (!existing) break;
+    slug = `${base}-${suffix++}`;
+  }
+  return slug;
+}
 
 // ── Auth Context Helper ────────────────────────────────────────────────────────
 
@@ -304,7 +320,8 @@ export async function createPlace(formData: PlaceFormData): Promise<PlaceType> {
   const { role, user } = await getAuthContext();
   if (role !== 'super_admin') throw new Error('Зөвхөн Super Admin газар үүсгэж чадна');
 
-  const place = await Place.create({ ...formData, created_by: user.id });
+  const slug = await generateUniqueSlug(formData.name);
+  const place = await Place.create({ ...formData, slug, created_by: user.id });
   revalidatePath('/admin/places');
   revalidatePath('/');
   const p = place.toObject();
@@ -322,10 +339,13 @@ export async function updatePlace(id: string, formData: PlaceFormData) {
     throw new Error('Эрх хүрэлцэхгүй');
   }
 
-  await Place.findByIdAndUpdate(id, { ...formData });
+  const existing = await Place.findById(id).select('name slug').lean() as any;
+  const needsNewSlug = existing && formData.name && formData.name !== existing.name;
+  const slug = needsNewSlug ? await generateUniqueSlug(formData.name, id) : undefined;
+  await Place.findByIdAndUpdate(id, { ...formData, ...(slug ? { slug } : {}) });
   revalidatePath('/admin/places');
   revalidatePath(`/admin/places/${id}/edit`);
-  revalidatePath(`/places/${id}`);
+  revalidatePath(`/places/${existing?.slug ?? id}`);
 }
 
 export async function deletePlace(id: string) {
@@ -367,8 +387,11 @@ export async function submitPlace(data: {
   const user = await getCurrentUser();
   if (!user) throw new Error('Нэвтрэх шаардлагатай');
 
+  const slug = await generateUniqueSlug(data.name);
+
   await Place.create({
     ...data,
+    slug,
     is_published: false,
     is_featured:  false,
     status:       'pending',

@@ -4,7 +4,7 @@ import PlacesSection from '@/components/home/PlacesSection';
 import PlacesFilterSidebar from '@/components/places/PlacesFilterSidebar';
 import { PlaceCardSkeleton } from '@/components/places/PlaceCard';
 
-const BASE_URL = 'https://mongolia-reso.vercel.app/';
+import { BASE_URL } from '@/lib/config';
 
 interface PlacesPageProps {
   searchParams: {

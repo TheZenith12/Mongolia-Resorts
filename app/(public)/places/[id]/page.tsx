@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -7,16 +7,22 @@ import { Place, Review, Like, User } from '@/lib/models';
 import PlaceDetailClient from '@/components/places/PlaceDetailClient';
 import { buildPlaceMetadata, buildPlaceSchema, buildBreadcrumbSchema } from '@/lib/seo';
 import { getSimilarPlaces } from '@/lib/actions/places';
+import { isObjectId } from '@/lib/slug';
 import type { Place as PlaceType } from '@/lib/types';
 
 interface PlacePageProps {
   params: { id: string };
 }
 
+async function findPlace(idOrSlug: string) {
+  if (isObjectId(idOrSlug)) return Place.findById(idOrSlug).lean();
+  return Place.findOne({ slug: idOrSlug }).lean();
+}
+
 export async function generateMetadata({ params }: PlacePageProps): Promise<Metadata> {
   try {
     await connectDB();
-    const doc = await Place.findById(params.id).lean();
+    const doc = await findPlace(params.id);
     if (!doc) return { title: 'Газар олдсонгүй' };
     const p = {
       ...(doc as any),
@@ -35,8 +41,14 @@ export async function generateMetadata({ params }: PlacePageProps): Promise<Meta
 export default async function PlacePage({ params }: PlacePageProps) {
   await connectDB();
 
-  const doc = await Place.findById(params.id).lean();
+  const doc = await findPlace(params.id);
   if (!doc) notFound();
+
+  // ObjectId-аар хандсан бол slug руу redirect хийнэ (canonical URL)
+  const p = doc as any;
+  if (p.slug && isObjectId(params.id)) {
+    redirect(`/places/${p.slug}`);
+  }
 
   const reviews = await Review.find({ place_id: params.id }).sort({ created_at: -1 }).lean();
   const reviewsFormatted = reviews.map((r: any) => ({

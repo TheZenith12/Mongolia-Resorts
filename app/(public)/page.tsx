@@ -5,6 +5,7 @@ import PlacesSection from '@/components/home/PlacesSection';
 import FeaturedSection from '@/components/home/FeaturedSection';
 import { getFeaturedPlaces, getSiteStats } from '@/lib/actions/places';
 import { buildWebsiteSchema } from '@/lib/seo';
+import { BASE_URL } from '@/lib/config';
 import type { SiteStats } from '@/lib/types';
 
 const defaultStats: SiteStats = {
@@ -13,7 +14,7 @@ const defaultStats: SiteStats = {
 };
 
 export const metadata: Metadata = {
-  alternates: { canonical: 'https://mongolia-reso.vercel.app/' },
+  alternates: { canonical: BASE_URL },
 };
 
 export default async function HomePage({

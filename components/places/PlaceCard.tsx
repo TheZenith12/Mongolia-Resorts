@@ -120,7 +120,7 @@ export default function PlaceCard({ place, liked = false, onLike, likeLoading = 
 
           {/* CTA */}
           <Link
-            href={`/places/${place.id}`}
+            href={`/places/${place.slug ?? place.id}`}
             className="flex items-center gap-0.5 text-forest-700 text-[10px] sm:text-xs font-medium hover:text-forest-900 transition-colors"
           >
             <span className="hidden sm:inline">Дэлгэрэнгүй</span>

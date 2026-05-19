@@ -1,7 +1,7 @@
 import type { Place } from '@/lib/types';
+import { BASE_URL, SITE_NAME } from '@/lib/config';
 
-const BASE_URL = 'https://mongolia-reso.vercel.app/';
-const ORG_NAME = 'Монгол Нутаг';
+const ORG_NAME = SITE_NAME;
 
 // ── Organization / Website schema (root page-д) ───────────────────────────────
 export function buildWebsiteSchema() {
@@ -42,7 +42,7 @@ export function buildWebsiteSchema() {
 
 // ── Place / LodgingBusiness schema (place detail page-д) ──────────────────────
 export function buildPlaceSchema(place: Place) {
-  const placeUrl = `${BASE_URL}/places/${place.id}`;
+  const placeUrl = `${BASE_URL}/places/${place.slug ?? place.id}`;
   const isResort = place.type === 'resort';
 
   // Resort → LodgingBusiness, байгалийн газар → TouristAttraction
@@ -141,7 +141,7 @@ export function buildBreadcrumbSchema(place: Place) {
 
 // ── generateMetadata helper — place detail-д хэрэглэнэ ───────────────────────
 export function buildPlaceMetadata(place: Place) {
-  const placeUrl = `${BASE_URL}/places/${place.id}`;
+  const placeUrl = `${BASE_URL}/places/${place.slug ?? place.id}`;
   const isResort = place.type === 'resort';
   const typeLabel = isResort ? 'Амралтын газар' : 'Байгалийн үзэсгэлэнт газар';
   const locationLabel = place.province

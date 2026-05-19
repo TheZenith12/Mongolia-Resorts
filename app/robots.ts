@@ -1,6 +1,5 @@
 import { MetadataRoute } from 'next';
-
-const BASE_URL = 'https://mongolia-reso.vercel.app/';
+import { BASE_URL } from '@/lib/config';
 
 export default function robots(): MetadataRoute.Robots {
   return {
