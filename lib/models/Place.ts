@@ -34,7 +34,6 @@ const PlaceSchema = new Schema({
   reject_reason:       String,
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
-PlaceSchema.index({ slug: 1 });
 PlaceSchema.index({ province: 1 });
 PlaceSchema.index({ type: 1 });
 PlaceSchema.index({ is_published: 1, rating_avg: -1 });
