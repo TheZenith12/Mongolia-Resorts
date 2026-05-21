@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, MapPin, CalendarCheck, Users,
-  Star, Settings, LogOut, Leaf, ChevronRight, Building2, CalendarX, MessageCircle,
+  Star, Settings, LogOut, Leaf, ChevronRight, Building2, CalendarX, MessageCircle, Menu, X,
 } from 'lucide-react';
 import { cn, getInitials } from '@/lib/utils';
 import { signOut as nextAuthSignOut } from 'next-auth/react';
@@ -27,6 +27,7 @@ export default function AdminSidebar({
   const isManager = profile.role === 'manager';
   const [chatUnread, setChatUnread] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const fetchChat = async () => {
@@ -54,6 +55,9 @@ export default function AdminSidebar({
     const t = setInterval(fetchPending, 30_000);
     return () => clearInterval(t);
   }, [isSuperAdmin]);
+
+  // Мобайлд route өөрчлөгдөхөд sidebar хаана
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   // Super admin: бүгдийг харна
   // Manager: зөвхөн өөрийн газар
@@ -96,19 +100,28 @@ export default function AdminSidebar({
         },
       ];
 
-  return (
-    <aside className="fixed left-0 top-0 bottom-0 w-64 bg-forest-950 border-r border-forest-800 flex flex-col z-40">
+  const sidebarContent = (
+    <>
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-forest-800">
-        <div className="w-9 h-9 bg-forest-700 rounded-xl flex items-center justify-center">
-          <Leaf size={18} className="text-amber-300" />
-        </div>
-        <div>
-          <div className="font-display text-white text-lg font-semibold leading-none">Монгол Нутаг</div>
-          <div className="text-forest-400 text-[10px] mt-0.5 uppercase tracking-wide">
-            {isSuperAdmin ? 'Super Admin' : 'Manager Panel'}
+      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-forest-800">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-forest-700 rounded-xl flex items-center justify-center">
+            <Leaf size={18} className="text-amber-300" />
+          </div>
+          <div>
+            <div className="font-display text-white text-base font-semibold leading-none">Монгол Нутаг</div>
+            <div className="text-forest-400 text-[10px] mt-0.5 uppercase tracking-wide">
+              {isSuperAdmin ? 'Super Admin' : 'Manager Panel'}
+            </div>
           </div>
         </div>
+        {/* Mobile close button */}
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="lg:hidden text-forest-400 hover:text-white p-1"
+        >
+          <X size={20} />
+        </button>
       </div>
 
       {/* Manager badge */}
@@ -182,6 +195,59 @@ export default function AdminSidebar({
           <LogOut size={15} /> Гарах
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* ── Desktop sidebar (lg+) ─────────────────────────────── */}
+      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 bg-forest-950 border-r border-forest-800 flex-col z-40">
+        {sidebarContent}
+      </aside>
+
+      {/* ── Mobile top bar ────────────────────────────────────── */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center gap-3 px-4 py-3 bg-forest-950 border-b border-forest-800">
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="text-forest-300 hover:text-white p-1"
+        >
+          <Menu size={22} />
+        </button>
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-forest-700 rounded-lg flex items-center justify-center">
+            <Leaf size={14} className="text-amber-300" />
+          </div>
+          <span className="font-display text-white text-base font-semibold">Монгол Нутаг</span>
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          {chatUnread > 0 && (
+            <span className="px-1.5 py-0.5 bg-amber-500 text-white text-[10px] rounded-full font-bold">
+              {chatUnread > 9 ? '9+' : chatUnread}
+            </span>
+          )}
+          <div className="w-8 h-8 rounded-lg bg-forest-600 flex items-center justify-center text-white text-xs font-semibold">
+            {getInitials(profile.full_name)}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Mobile sidebar drawer ─────────────────────────────── */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 flex"
+          onClick={() => setMobileOpen(false)}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60" />
+          {/* Drawer */}
+          <aside
+            className="relative w-64 max-w-[80vw] bg-forest-950 flex flex-col h-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+    </>
   );
 }

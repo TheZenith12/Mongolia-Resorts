@@ -52,7 +52,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         assignedPlaceId={assignedPlaceId}
         assignedPlaceName={assignedPlaceName}
       />
-      <main className="flex-1 ml-64 p-8 bg-gray-50 min-h-screen">
+      <main className="flex-1 lg:ml-64 pt-16 lg:pt-0 p-4 lg:p-8 bg-gray-50 min-h-screen">
         {role === 'manager' && !assignedPlaceId && (
           <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-5">
             <h3 className="font-semibold text-amber-800 mb-1">Газар оноогдоогүй байна</h3>
