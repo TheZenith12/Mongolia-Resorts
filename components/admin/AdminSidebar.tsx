@@ -8,7 +8,7 @@ import {
   Star, Settings, LogOut, Leaf, ChevronRight, Building2, CalendarX, MessageCircle,
 } from 'lucide-react';
 import { cn, getInitials } from '@/lib/utils';
-import { signOut } from '@/lib/actions/auth';
+import { signOut as nextAuthSignOut } from 'next-auth/react';
 import type { Profile } from '@/lib/types';
 
 interface AdminSidebarProps {
@@ -175,14 +175,12 @@ export default function AdminSidebar({
             </div>
           </div>
         </div>
-        <form action={signOut}>
-          <button
-            type="submit"
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-forest-400 hover:bg-forest-800 hover:text-red-400 text-sm transition-colors"
-          >
-            <LogOut size={15} /> Гарах
-          </button>
-        </form>
+        <button
+          onClick={() => nextAuthSignOut({ callbackUrl: '/auth/login' })}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-forest-400 hover:bg-forest-800 hover:text-red-400 text-sm transition-colors"
+        >
+          <LogOut size={15} /> Гарах
+        </button>
       </div>
     </aside>
   );

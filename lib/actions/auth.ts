@@ -20,7 +20,8 @@ export async function signUp(email: string, password: string, fullName: string):
 }
 
 export async function signOut(): Promise<void> {
-  redirect('/auth/login');
+  // Session cookie-г устгахын тулд NextAuth-ийн API ашиглана
+  redirect('/api/auth/signout?callbackUrl=/auth/login');
 }
 
 export async function getCurrentProfile() {

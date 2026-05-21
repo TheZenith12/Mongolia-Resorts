@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X, MapPin, Eye, Building2, Leaf, Heart, LogOut, ChevronDown } from 'lucide-react';
+import { signOut as nextAuthSignOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import type { SiteStats, Profile } from '@/lib/types';
-import { signOut } from '@/lib/actions/auth';
 import DarkModeToggle from '@/components/layout/DarkModeToggle';
 
 interface HeaderProps {
@@ -18,6 +18,12 @@ export default function Header({ stats, profile }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleSignOut() {
+    setUserMenuOpen(false);
+    await nextAuthSignOut({ callbackUrl: '/auth/login' });
+  }
 
   const navLinks = [
     { href: '/',                label: 'Нүүр' },
@@ -130,14 +136,12 @@ export default function Header({ stats, profile }: HeaderProps) {
                       <Heart size={15} /> Дуртай газрууд
                     </Link>
                     <hr className="border-forest-100 my-1" />
-                    <form action={signOut}>
-                      <button
-                        type="submit"
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
-                      >
-                        <LogOut size={15} /> Гарах
-                      </button>
-                    </form>
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut size={15} /> Гарах
+                    </button>
                   </div>
                 )}
               </div>
