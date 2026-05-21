@@ -3,30 +3,20 @@ import { authOptions } from '@/lib/auth';
 import { connectDB } from '@/lib/mongodb';
 import { ManagerAssignment, Place } from '@/lib/models';
 import AdminSidebar from '@/components/admin/AdminSidebar';
+import { redirect } from 'next/navigation';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
-    return (
-      <div style={{padding:'40px',fontFamily:'monospace',background:'#0a1a10',color:'#fff',minHeight:'100vh'}}>
-        <h2>Нэвтрэх шаардлагатай</h2>
-        <a href="/auth/login" style={{color:'#4ade80'}}>Login хуудас руу очих</a>
-      </div>
-    );
+    redirect('/auth/login?callbackUrl=/admin');
   }
 
   const user = session.user as any;
   const role = user.role;
 
   if (!['super_admin', 'manager'].includes(role)) {
-    return (
-      <div style={{padding:'40px',fontFamily:'monospace',background:'#0a1a10',color:'#fff',minHeight:'100vh'}}>
-        <h2>Эрх байхгүй</h2>
-        <p>Одоогийн role: <strong style={{color:'#fbbf24'}}>{role}</strong></p>
-        <a href="/" style={{color:'#4ade80'}}>Нүүр хуудас руу очих</a>
-      </div>
-    );
+    redirect('/');
   }
 
   // Manager-ийн оноогдсон газрыг авах

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Leaf, Mail, Lock, User, ArrowLeft } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { toast } from "react-hot-toast";
@@ -11,6 +11,7 @@ type Mode = "login" | "register";
 
 export default function AuthPage({ mode = "login" }: { mode?: Mode }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -35,8 +36,8 @@ export default function AuthPage({ mode = "login" }: { mode?: Mode }) {
         }
 
         toast.success("Амжилттай нэвтэрлээ!");
-        // Redirect to admin or home based on session
-        window.location.href = "/";
+        const callbackUrl = searchParams.get("callbackUrl") || "/";
+        window.location.href = callbackUrl;
       } else {
         if (password.length < 6) {
           toast.error("Нууц үг 6 тэмдэгтээс дээш байх ёстой");
