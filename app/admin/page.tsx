@@ -179,10 +179,10 @@ export default async function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl font-semibold text-forest-900">
+        <h1 className="font-display text-2xl lg:text-3xl font-semibold text-forest-900">
           {stats.isManager && stats.placeName ? `${stats.placeName} — Самбар` : 'Самбар'}
         </h1>
-        <p className="text-forest-500 text-sm mt-1">
+        <p className="text-forest-500 text-sm mt-0.5">
           {stats.isManager ? 'Таны газрын мэдээлэл' : 'Нийт систем'}
         </p>
       </div>
@@ -253,35 +253,31 @@ export default async function AdminDashboard() {
 
       {stats.isManager && stats.recentBookings.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center justify-between px-4 lg:px-6 py-4 border-b border-gray-100">
             <h2 className="font-semibold text-forest-900">Сүүлийн захиалгууд</h2>
             <Link href="/admin/bookings" className="text-xs text-forest-500 hover:text-forest-700">
               Бүгдийг харах →
             </Link>
           </div>
-          <table className="w-full">
-            <tbody className="divide-y divide-gray-50">
-              {stats.recentBookings.map((b: any) => (
-                <tr key={b.id} className="hover:bg-gray-50/40">
-                  <td className="px-6 py-3.5">
-                    <div className="text-sm font-medium text-forest-900">{b.guest_name}</div>
-                    <div className="text-xs text-forest-400">{b.guest_phone}</div>
-                  </td>
-                  <td className="px-6 py-3.5 text-xs text-forest-500">
-                    {formatDate(b.check_in)} → {formatDate(b.check_out)}
-                  </td>
-                  <td className="px-6 py-3.5 text-sm font-medium text-forest-700">
-                    {formatPrice(b.total_amount)}
-                  </td>
-                  <td className="px-6 py-3.5">
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusColors[b.status] ?? ''}`}>
-                      {statusLabels[b.status] ?? b.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="divide-y divide-gray-50">
+            {stats.recentBookings.map((b: any) => (
+              <div key={b.id} className="px-4 lg:px-6 py-3 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-forest-900">{b.guest_name}</div>
+                  <div className="text-xs text-forest-400">{b.guest_phone}</div>
+                </div>
+                <div className="text-xs text-forest-500 hidden sm:block">
+                  {formatDate(b.check_in)} → {formatDate(b.check_out)}
+                </div>
+                <div className="text-sm font-medium text-forest-700 hidden sm:block">
+                  {formatPrice(b.total_amount)}
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${statusColors[b.status] ?? ''}`}>
+                  {statusLabels[b.status] ?? b.status}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

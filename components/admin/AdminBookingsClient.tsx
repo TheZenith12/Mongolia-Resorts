@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { formatPrice } from '@/lib/utils';
 import BookingChat from './BookingChat';
-import { MessageCircle, X, Check, CheckCheck, Ban, ChevronDown } from 'lucide-react';
+import { MessageCircle, X, Check, CheckCheck, Ban, ChevronDown, MapPin } from 'lucide-react';
 import { updateBookingStatus } from '@/lib/actions/places';
 import { toast } from 'react-hot-toast';
 
@@ -18,12 +18,17 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-red-50 text-red-700 border-red-200',
   completed: 'bg-blue-50 text-blue-700 border-blue-200',
 };
-
+const statusLabels: Record<string, string> = {
+  pending: 'Хүлээгдэж буй', confirmed: 'Батлагдсан', cancelled: 'Цуцлагдсан', completed: 'Дууссан',
+};
 const paymentColors: Record<string, string> = {
   pending:  'bg-yellow-50 text-yellow-600',
   paid:     'bg-green-50 text-green-600',
   failed:   'bg-red-50 text-red-600',
   refunded: 'bg-gray-50 text-gray-600',
+};
+const paymentLabels: Record<string, string> = {
+  pending: 'Хүлээгдэж буй', paid: 'Төлөгдсөн', failed: 'Амжилтгүй', refunded: 'Буцаагдсан',
 };
 
 function BookingStatusActions({ booking, onUpdate }: { booking: any; onUpdate: (id: string, status: string) => void }) {
@@ -88,13 +93,55 @@ export default function AdminBookingsClient({ bookings: initialBookings, current
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="font-display text-3xl font-semibold text-forest-900">Захиалгууд</h1>
-        <p className="text-forest-500 text-sm mt-1">{bookings.length} захиалга</p>
+      <div className="mb-5">
+        <h1 className="font-display text-2xl lg:text-3xl font-semibold text-forest-900">Захиалгууд</h1>
+        <p className="text-forest-500 text-sm mt-0.5">{bookings.length} захиалга</p>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <table className="w-full">
+        {/* ── Mobile card list (< lg) ── */}
+        <div className="lg:hidden divide-y divide-gray-50">
+          {bookings.map((b: any) => (
+            <div key={b.id} className="p-3">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-forest-900">{b.guest_name}</div>
+                  <div className="text-xs text-forest-400">{b.guest_phone}</div>
+                  {b.place?.name && (
+                    <div className="text-xs text-forest-500 flex items-center gap-1 mt-0.5">
+                      <MapPin size={10} />{b.place.name}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button
+                    onClick={() => setChatBooking(chatBooking?.id === b.id ? null : b)}
+                    className="w-7 h-7 rounded-lg bg-forest-50 text-forest-600 hover:bg-forest-100 flex items-center justify-center"
+                  >
+                    <MessageCircle size={13} />
+                  </button>
+                  <BookingStatusActions booking={b} onUpdate={handleStatusUpdate} />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-forest-500">{b.check_in} → {b.check_out}</span>
+                <span className="text-xs font-semibold text-forest-700">{formatPrice(b.total_amount)}</span>
+                <span className={`badge text-[10px] py-0 ${statusColors[b.status] ?? ''}`}>
+                  {statusLabels[b.status] ?? b.status}
+                </span>
+                <span className={`badge text-[10px] py-0 ${paymentColors[b.payment_status] ?? ''}`}>
+                  {paymentLabels[b.payment_status] ?? b.payment_status}
+                </span>
+              </div>
+            </div>
+          ))}
+          {bookings.length === 0 && (
+            <div className="text-center py-12 text-forest-400 text-sm">Захиалга байхгүй байна</div>
+          )}
+        </div>
+
+        {/* ── Desktop table (lg+) ── */}
+        <table className="hidden lg:table w-full">
           <thead>
             <tr className="border-b border-gray-100">
               {['Зочин', 'Газар', 'Огноо', 'Дүн', 'Төлбөр', 'Статус', 'Үйлдэл', 'Чат'].map(h => (
@@ -119,12 +166,12 @@ export default function AdminBookingsClient({ bookings: initialBookings, current
                 </td>
                 <td className="px-5 py-4">
                   <span className={`badge text-xs ${paymentColors[b.payment_status] ?? ''}`}>
-                    {b.payment_status}
+                    {paymentLabels[b.payment_status] ?? b.payment_status}
                   </span>
                 </td>
                 <td className="px-5 py-4">
                   <span className={`badge text-xs ${statusColors[b.status] ?? ''}`}>
-                    {b.status}
+                    {statusLabels[b.status] ?? b.status}
                   </span>
                 </td>
                 <td className="px-5 py-4">
@@ -143,16 +190,16 @@ export default function AdminBookingsClient({ bookings: initialBookings, current
           </tbody>
         </table>
         {bookings.length === 0 && (
-          <div className="text-center py-16 text-forest-400 text-sm">Захиалга байхгүй байна</div>
+          <div className="hidden lg:block text-center py-16 text-forest-400 text-sm">Захиалга байхгүй байна</div>
         )}
       </div>
 
       {/* Chat panel */}
       {chatBooking && (
-        <div className="mt-6 bg-white rounded-2xl border border-gray-100 p-5">
+        <div className="mt-4 bg-white rounded-2xl border border-gray-100 p-4">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-semibold text-forest-900">{chatBooking.guest_name} — мессеж</h3>
+              <h3 className="font-semibold text-forest-900 text-sm">{chatBooking.guest_name} — мессеж</h3>
               <p className="text-xs text-forest-400">{chatBooking.place?.name} · {chatBooking.check_in} → {chatBooking.check_out}</p>
             </div>
             <button onClick={() => setChatBooking(null)} className="text-forest-400 hover:text-forest-600">

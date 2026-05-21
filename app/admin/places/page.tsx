@@ -28,7 +28,6 @@ export default async function AdminPlacesPage({
   let count = 0;
 
   if (role === 'super_admin') {
-    // Хүлээгдэж буй газрууд
     const pendingDocs = await Place.find({ status: 'pending' }).sort({ created_at: -1 }).lean();
     pending = pendingDocs.map((p: any) => ({
       ...p, id: p._id.toString(),
@@ -36,7 +35,6 @@ export default async function AdminPlacesPage({
       created_at: p.created_at?.toISOString(),
     }));
 
-    // Бүх газрууд (approved/хуучин)
     const query: any = { status: { $ne: 'pending' } };
     if (searchParams.type)   query.type = searchParams.type;
     if (searchParams.search) query.name = { $regex: searchParams.search, $options: 'i' };
@@ -70,31 +68,34 @@ export default async function AdminPlacesPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="font-display text-3xl font-semibold text-forest-900">
+          <h1 className="font-display text-2xl lg:text-3xl font-semibold text-forest-900">
             {role === 'manager' ? 'Миний газар' : 'Газрууд'}
           </h1>
-          <p className="text-forest-500 text-sm mt-1">{count} нийт газар</p>
+          <p className="text-forest-500 text-sm mt-0.5">{count} нийт газар</p>
         </div>
         {role === 'super_admin' && (
-          <Link href="/admin/places/new" className="btn-primary">
-            <Plus size={17} /> Шинэ газар нэмэх
+          <Link href="/admin/places/new" className="btn-primary text-sm py-2 px-3 lg:px-4">
+            <Plus size={16} />
+            <span className="hidden sm:inline">Шинэ газар нэмэх</span>
+            <span className="sm:hidden">Нэмэх</span>
           </Link>
         )}
       </div>
 
       {/* Tabs */}
       {role === 'super_admin' && (
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-5">
           <Link href="/admin/places?tab=all"
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+            className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
               tab !== 'pending' ? 'bg-forest-800 text-white' : 'bg-white text-forest-600 border border-forest-200 hover:border-forest-400'
             }`}>
             Бүгд ({count})
           </Link>
           <Link href="/admin/places?tab=pending"
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5 ${
+            className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5 ${
               tab === 'pending' ? 'bg-amber-500 text-white' : 'bg-white text-forest-600 border border-forest-200 hover:border-forest-400'
             }`}>
             <Clock size={14} />
@@ -108,13 +109,13 @@ export default async function AdminPlacesPage({
         </div>
       )}
 
-      {/* Хайлт (зөвхөн бүх газрын tab) */}
+      {/* Search */}
       {role === 'super_admin' && !showPending && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 flex gap-3">
-          <form className="flex gap-3 flex-1">
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-5">
+          <form className="flex flex-col sm:flex-row gap-2">
             <input name="search" defaultValue={searchParams.search}
               placeholder="Нэрээр хайх..." className="input-field flex-1 text-sm py-2" />
-            <select name="type" defaultValue={searchParams.type ?? ''} className="input-field w-44 text-sm py-2">
+            <select name="type" defaultValue={searchParams.type ?? ''} className="input-field sm:w-44 text-sm py-2">
               <option value="">Бүгд</option>
               <option value="resort">Амралтын газар</option>
               <option value="nature">Байгалийн газар</option>
@@ -124,7 +125,7 @@ export default async function AdminPlacesPage({
         </div>
       )}
 
-      {/* Хүлээгдэж буй газрууд */}
+      {/* Pending places */}
       {showPending ? (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           {pending.length === 0 ? (
@@ -135,29 +136,26 @@ export default async function AdminPlacesPage({
           ) : (
             <div className="divide-y divide-gray-50">
               {pending.map(place => (
-                <div key={place.id} className="p-5 flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-forest-100 flex-shrink-0">
+                <div key={place.id} className="p-4 flex items-start gap-3">
+                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-forest-100 flex-shrink-0">
                     {place.cover_image ? (
-                      <Image src={place.cover_image} alt={place.name} width={64} height={64} className="object-cover w-full h-full" unoptimized />
+                      <Image src={place.cover_image} alt={place.name} width={56} height={56} className="object-cover w-full h-full" unoptimized />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-2xl">
+                      <div className="w-full h-full flex items-center justify-center text-xl">
                         {place.type === 'resort' ? '🏕' : '🌿'}
                       </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="font-semibold text-forest-900">{place.name}</h3>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-forest-500">
-                          {place.province && <span className="flex items-center gap-1"><MapPin size={11} />{place.province}</span>}
-                          <span className="flex items-center gap-1">
-                            <User size={11} />{place.submitted_by_name ?? 'Хэрэглэгч'}
-                          </span>
-                          <span>{new Date(place.created_at).toLocaleDateString('mn-MN')}</span>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-forest-900 text-sm truncate">{place.name}</h3>
+                        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-forest-500">
+                          {place.province && <span className="flex items-center gap-1"><MapPin size={10} />{place.province}</span>}
+                          <span className="flex items-center gap-1"><User size={10} />{place.submitted_by_name ?? 'Хэрэглэгч'}</span>
                         </div>
                         {place.description && (
-                          <p className="text-sm text-forest-600 mt-2 line-clamp-2">{place.description}</p>
+                          <p className="text-xs text-forest-600 mt-1.5 line-clamp-2">{place.description}</p>
                         )}
                       </div>
                       <PendingPlaceActions placeId={place.id} />
@@ -169,9 +167,48 @@ export default async function AdminPlacesPage({
           )}
         </div>
       ) : (
-        /* Нийт газрын хүснэгт */
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          <table className="w-full">
+          {/* ── Mobile card list (< lg) ── */}
+          <div className="lg:hidden divide-y divide-gray-50">
+            {places.map((place) => (
+              <div key={place.id} className="p-3 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl overflow-hidden bg-forest-100 flex-shrink-0">
+                  {place.cover_image ? (
+                    <Image src={place.cover_image} alt={place.name} width={48} height={48} className="object-cover w-full h-full" unoptimized />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-lg">
+                      {place.type === 'resort' ? '🏕' : '🌿'}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-forest-900 truncate">{place.name}</div>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    {place.province && (
+                      <span className="text-xs text-forest-400 flex items-center gap-0.5">
+                        <MapPin size={10} />{place.province}
+                      </span>
+                    )}
+                    <span className={`badge text-[10px] py-0 ${place.is_published ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                      {place.is_published ? 'Нийтлэгдсэн' : 'Ноорог'}
+                    </span>
+                    {place.price_per_night && (
+                      <span className="text-xs text-forest-600 font-medium">{formatPrice(place.price_per_night)}</span>
+                    )}
+                  </div>
+                </div>
+                <AdminPlaceActions place={place} />
+              </div>
+            ))}
+            {places.length === 0 && (
+              <div className="text-center py-12 text-forest-400 text-sm">
+                {role === 'manager' ? 'Оноогдсон газар байхгүй байна' : 'Газар байхгүй байна'}
+              </div>
+            )}
+          </div>
+
+          {/* ── Desktop table (lg+) ── */}
+          <table className="hidden lg:table w-full">
             <thead>
               <tr className="border-b border-gray-100">
                 {['Газар', 'Төрөл', 'Байршил', 'Үнэ', 'Статус', 'Үйлдэл'].map(h => (
@@ -227,7 +264,7 @@ export default async function AdminPlacesPage({
             </tbody>
           </table>
           {places.length === 0 && (
-            <div className="text-center py-16 text-forest-400 text-sm">
+            <div className="hidden lg:block text-center py-16 text-forest-400 text-sm">
               {role === 'manager' ? 'Оноогдсон газар байхгүй байна' : 'Газар байхгүй байна'}
             </div>
           )}

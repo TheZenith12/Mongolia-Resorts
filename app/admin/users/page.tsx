@@ -14,7 +14,6 @@ async function getUsers() {
     assignments.map((a: any) => [a.manager_id.toString(), a.place_id])
   );
 
-  // Fetch assigned place names
   const placeIds = assignments.map((a: any) => a.place_id).filter(Boolean);
   const places = await Place.find({ _id: { $in: placeIds } }).select('_id name').lean();
   const placeNameMap = new Map(places.map((p: any) => [p._id.toString(), p.name]));
@@ -55,13 +54,49 @@ export default async function AdminUsersPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="font-display text-3xl font-semibold text-forest-900">Хэрэглэгчид</h1>
-        <p className="text-forest-500 text-sm mt-1">{users.length} нийт хэрэглэгч</p>
+      <div className="mb-5">
+        <h1 className="font-display text-2xl lg:text-3xl font-semibold text-forest-900">Хэрэглэгчид</h1>
+        <p className="text-forest-500 text-sm mt-0.5">{users.length} нийт хэрэглэгч</p>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <table className="w-full">
+        {/* ── Mobile card list (< lg) ── */}
+        <div className="lg:hidden divide-y divide-gray-50">
+          {users.map((user: any) => {
+            const assignedPlace   = user.manager_assigned_place?.[0]?.places?.name ?? null;
+            const assignedPlaceId = user.manager_assigned_place?.[0]?.place_id ?? null;
+            return (
+              <div key={user.id} className="p-3 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-forest-100 flex items-center justify-center text-forest-600 text-sm font-semibold flex-shrink-0">
+                  {getInitials(user.full_name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium text-forest-900 truncate">{user.full_name}</span>
+                    <span className={`badge text-[10px] py-0 ${roleColors[user.role] ?? ''}`}>
+                      {roleLabels[user.role] ?? user.role}
+                    </span>
+                  </div>
+                  <div className="text-xs text-forest-400 truncate mt-0.5">{user.email}</div>
+                  {assignedPlace && (
+                    <div className="text-xs text-forest-600 mt-0.5">🏕 {assignedPlace}</div>
+                  )}
+                </div>
+                <AdminUserRoleChange
+                  userId={user.id}
+                  currentRole={user.role}
+                  assignedPlaceId={assignedPlaceId}
+                />
+              </div>
+            );
+          })}
+          {users.length === 0 && (
+            <div className="text-center py-12 text-forest-400 text-sm">Хэрэглэгч байхгүй байна</div>
+          )}
+        </div>
+
+        {/* ── Desktop table (lg+) ── */}
+        <table className="hidden lg:table w-full">
           <thead>
             <tr className="border-b border-gray-100">
               {['Хэрэглэгч', 'И-мэйл', 'Эрх', 'Оноогдсон газар', 'Бүртгүүлсэн', 'Тохиргоо'].map(h => (
@@ -113,7 +148,7 @@ export default async function AdminUsersPage() {
           </tbody>
         </table>
         {users.length === 0 && (
-          <div className="text-center py-16 text-forest-400 text-sm">Хэрэглэгч байхгүй байна</div>
+          <div className="hidden lg:block text-center py-16 text-forest-400 text-sm">Хэрэглэгч байхгүй байна</div>
         )}
       </div>
     </div>
