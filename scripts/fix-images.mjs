@@ -1,7 +1,4 @@
-/**
- * Wikimedia зургуудыг Unsplash зургаар солих
- * node scripts/fix-images.mjs
- */
+// scripts/fix-images.mjs
 import mongoose from 'mongoose';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -56,7 +53,6 @@ const IMG = {
 
 // ── Slug → зургийн жагсаалт ──────────────────────────────────────────────────
 const IMAGE_MAP = {
-  // ─ АРХАНГАЙ ─────────────────────────────────────────────────────────────────
   'terkhiin-tsagaan-nuur': {
     cover_image: IMG.lake1,
     images: [IMG.lake1, IMG.lake2, IMG.mountain1, IMG.nature1],
@@ -78,7 +74,6 @@ const IMAGE_MAP = {
     images: [IMG.river1, IMG.river2, IMG.mountain1, IMG.forest1],
   },
 
-  // ─ ӨВӨРХАНГАЙ ───────────────────────────────────────────────────────────────
   'orkhoni-khurkhree': {
     cover_image: IMG.river1,
     images: [IMG.river1, IMG.river2, IMG.steppe1, IMG.nature1],
@@ -112,7 +107,6 @@ const IMAGE_MAP = {
     images: [IMG.steppe3, IMG.steppe1, IMG.steppe2, IMG.nature1],
   },
 
-  // ─ ТӨВ АЙМАГ ───────────────────────────────────────────────────────────────
   'gorkhi-terelj-undesnii-tsetserlegt-khureelen': {
     cover_image: IMG.forest2,
     images: [IMG.forest2, IMG.forest1, IMG.mountain1, IMG.river1],
@@ -130,7 +124,6 @@ const IMAGE_MAP = {
     images: [IMG.forest1, IMG.forest2, IMG.mountain1, IMG.nature1],
   },
 
-  // ─ ХӨВСГӨЛ ─────────────────────────────────────────────────────────────────
   'khovsgol-nuur-mongolin-dalai': {
     cover_image: IMG.lake3,
     images: [IMG.lake3, IMG.lake1, IMG.lake2, IMG.forest1],
@@ -140,7 +133,6 @@ const IMAGE_MAP = {
     images: [IMG.forest2, IMG.forest1, IMG.nature1, IMG.mountain1],
   },
 
-  // ─ ӨМНӨГОВЬ ─────────────────────────────────────────────────────────────────
   'khongorin-els-duulakh-els': {
     cover_image: IMG.desert1,
     images: [IMG.desert1, IMG.desert2, IMG.desert3, IMG.steppe1],
@@ -154,7 +146,6 @@ const IMAGE_MAP = {
     images: [IMG.mountain2, IMG.desert1, IMG.mountain1, IMG.nature1],
   },
 
-  // ─ БАЯН-ӨЛГИЙ ───────────────────────────────────────────────────────────────
   'altai-tavan-bogd-undesnii-tsetserlegt-khureelen': {
     cover_image: IMG.glacier1,
     images: [IMG.glacier1, IMG.glacier2, IMG.mountain2, IMG.mountain1],
@@ -164,7 +155,6 @@ const IMAGE_MAP = {
     images: [IMG.mountain3, IMG.steppe2, IMG.glacier1, IMG.nature1],
   },
 
-  // ─ СЭЛЭНГЭ / БУЛГАН ─────────────────────────────────────────────────────────
   'amarbayasgalant-khiid': {
     cover_image: IMG.nature2,
     images: [IMG.nature2, IMG.nature1, IMG.steppe1, IMG.mountain1],
@@ -174,7 +164,6 @@ const IMAGE_MAP = {
     images: [IMG.river2, IMG.river1, IMG.steppe1, IMG.nature1],
   },
 
-  // ─ УВС / ХОВД ───────────────────────────────────────────────────────────────
   'uvs-nuur-yunyesko-delkhiin-ov': {
     cover_image: IMG.lake2,
     images: [IMG.lake2, IMG.steppe1, IMG.nature1, IMG.mountain1],
@@ -184,13 +173,11 @@ const IMAGE_MAP = {
     images: [IMG.lake1, IMG.lake2, IMG.nature1, IMG.mountain1],
   },
 
-  // ─ ДУНДГОВЬ ─────────────────────────────────────────────────────────────────
   'tsagaan-suvarga': {
     cover_image: IMG.desert3,
     images: [IMG.desert3, IMG.desert2, IMG.steppe1, IMG.nature1],
   },
 
-  // ─ ХЭНТИЙ ───────────────────────────────────────────────────────────────────
   'binder-chingis-khaani-torson-nutag': {
     cover_image: IMG.steppe3,
     images: [IMG.steppe3, IMG.steppe1, IMG.nature1, IMG.river1],
@@ -203,7 +190,7 @@ const IMAGE_MAP = {
 
 async function main() {
   await mongoose.connect(process.env.MONGODB_URI);
-  console.log('✅ MongoDB холбогдлоо\n');
+  console.log('MongoDB холбогдлоо\n');
 
   let updated = 0;
   for (const [slug, data] of Object.entries(IMAGE_MAP)) {

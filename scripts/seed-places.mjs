@@ -1,18 +1,29 @@
-/**
- * 🌿 Монгол Улсын 21 аймгийн үзэсгэлэнт газар + амралтын газрууд
- * node scripts/seed-places.mjs
- */
+// Монгол Улсын 21 аймгийн газруудыг MongoDB-д оруулах
+// node scripts/seed-places.mjs
 
 import { MongoClient } from 'mongodb';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-const MONGODB_URI = 'mongodb+srv://zenitht19:***REMOVED***@cluster0.wietegr.mongodb.net/mng-resorts?retryWrites=true&w=majority';
-const DB_NAME = 'mng-resorts';
+const __dirname = dirname(fileURLToPath(import.meta.url));
+try {
+  const env = readFileSync(join(__dirname, '../.env.local'), 'utf8');
+  for (const line of env.split('\n')) {
+    const m = line.match(/^([^#=]+)=(.*)/);
+    if (m) process.env[m[1].trim()] = m[2].trim();
+  }
+} catch {}
+
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) { console.error('MONGODB_URI олдсонгүй'); process.exit(1); }
+
+const DB_NAME = MONGODB_URI.split('/').pop()?.split('?')[0] ?? 'mng-resorts';
 
 const places = [
 
-  // ═══════════════════════════════════════════════════════════
-  // 1. АРХАНГАЙ
-  // ═══════════════════════════════════════════════════════════
+
+  // АРХАНГАЙ
   {
     name: 'Тэрхийн Цагаан нуур',
     type: 'nature', province: 'Архангай',
@@ -54,9 +65,8 @@ const places = [
     rating_avg: 4.4, rating_count: 0, view_count: 0, images: [], amenities: ['Гэр буудал', 'Хоол', 'Морин аялал', 'WiFi', 'Угаалгын өрөө'],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 2. БАЯН-ӨЛГИЙ
-  // ═══════════════════════════════════════════════════════════
+
+  // БАЯН-ӨЛГИЙ
   {
     name: 'Таван Богд уул',
     type: 'nature', province: 'Баян-Өлгий',
@@ -88,9 +98,8 @@ const places = [
     rating_avg: 4.7, rating_count: 0, view_count: 0, images: [], amenities: ['Хоол', 'Гэр буудал', 'Соёлын аялал', 'Бүргэдчлэх'],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 3. БАЯНХОНГОР
-  // ═══════════════════════════════════════════════════════════
+
+  // БАЯНХОНГОР
   {
     name: 'Их Богд уул',
     type: 'nature', province: 'Баянхонгор',
@@ -112,9 +121,8 @@ const places = [
     rating_avg: 4.5, rating_count: 0, view_count: 0, images: [], amenities: [],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 4. ГОВЬ-АЛТАЙ
-  // ═══════════════════════════════════════════════════════════
+
+  // ГОВЬ-АЛТАЙ
   {
     name: 'Их Газрын чулуу',
     type: 'nature', province: 'Говь-Алтай',
@@ -126,9 +134,8 @@ const places = [
     rating_avg: 4.5, rating_count: 0, view_count: 0, images: [], amenities: [],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 5. ДОРНОД
-  // ═══════════════════════════════════════════════════════════
+
+  // ДОРНОД
   {
     name: 'Буйр нуур',
     type: 'nature', province: 'Дорнод',
@@ -150,9 +157,8 @@ const places = [
     rating_avg: 4.2, rating_count: 0, view_count: 0, images: [], amenities: ['Гэр буудал', 'Хоол', 'Морин аялал'],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 6. ДУНДГОВЬ
-  // ═══════════════════════════════════════════════════════════
+
+  // ДУНДГОВЬ
   {
     name: 'Цагаан суварга',
     type: 'nature', province: 'Дундговь',
@@ -164,9 +170,8 @@ const places = [
     rating_avg: 4.7, rating_count: 0, view_count: 0, images: [], amenities: [],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 7. ЗАВХАН
-  // ═══════════════════════════════════════════════════════════
+
+  // ЗАВХАН
   {
     name: 'Отгонтэнгэр уул',
     type: 'nature', province: 'Завхан',
@@ -188,9 +193,8 @@ const places = [
     rating_avg: 4.5, rating_count: 0, view_count: 0, images: [], amenities: [],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 8. ӨВӨРХАНГАЙ
-  // ═══════════════════════════════════════════════════════════
+
+  // ӨВӨРХАНГАЙ
   {
     name: 'Орхоны хүрхрээ',
     type: 'nature', province: 'Өвөрхангай',
@@ -222,9 +226,8 @@ const places = [
     rating_avg: 4.4, rating_count: 0, view_count: 0, images: [], amenities: ['Гэр буудал', 'Хоол', 'Морин аялал', 'WiFi'],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 9. ӨМНӨГОВЬ
-  // ═══════════════════════════════════════════════════════════
+
+  // ӨМНӨГОВЬ
   {
     name: 'Хонгорын элс — Дуулах элс',
     type: 'nature', province: 'Өмнөговь',
@@ -266,9 +269,8 @@ const places = [
     rating_avg: 4.6, rating_count: 0, view_count: 0, images: [], amenities: ['Гэр буудал', 'Хоол', 'Тэмээний аялал', 'Одон харах'],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 10. СҮХБААТАР
-  // ═══════════════════════════════════════════════════════════
+
+  // СҮХБААТАР
   {
     name: 'Дариганга нутаг',
     type: 'nature', province: 'Сүхбаатар',
@@ -280,9 +282,8 @@ const places = [
     rating_avg: 4.5, rating_count: 0, view_count: 0, images: [], amenities: [],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 11. СЭЛЭНГЭ
-  // ═══════════════════════════════════════════════════════════
+
+  // СЭЛЭНГЭ
   {
     name: 'Амарбаясгалант хийд',
     type: 'nature', province: 'Сэлэнгэ',
@@ -294,9 +295,8 @@ const places = [
     rating_avg: 4.8, rating_count: 0, view_count: 0, images: [], amenities: [],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 12. ТӨВ АЙМАГ
-  // ═══════════════════════════════════════════════════════════
+
+  // ТӨВ АЙМАГ
   {
     name: 'Горхи-Тэрэлж үндэсний цэцэрлэгт хүрээлэн',
     type: 'nature', province: 'Төв',
@@ -348,9 +348,8 @@ const places = [
     rating_avg: 4.7, rating_count: 0, view_count: 0, images: [], amenities: ['Гэр буудал', 'Хоол', 'WiFi', 'Усан сан', 'Спа', 'Морин аялал', 'Угаалгын өрөө'],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 13. УВС
-  // ═══════════════════════════════════════════════════════════
+
+  // УВС
   {
     name: 'Увс нуур — ЮНЕСКО Дэлхийн өв',
     type: 'nature', province: 'Увс',
@@ -362,9 +361,8 @@ const places = [
     rating_avg: 4.8, rating_count: 0, view_count: 0, images: [], amenities: [],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 14. ХОВД
-  // ═══════════════════════════════════════════════════════════
+
+  // ХОВД
   {
     name: 'Хар ус нуур — Үндэсний цэцэрлэгт хүрээлэн',
     type: 'nature', province: 'Ховд',
@@ -376,9 +374,8 @@ const places = [
     rating_avg: 4.6, rating_count: 0, view_count: 0, images: [], amenities: [],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 15. ХӨВСГӨЛ
-  // ═══════════════════════════════════════════════════════════
+
+  // ХӨВСГӨЛ
   {
     name: 'Хөвсгөл нуур — Монголын далай',
     type: 'nature', province: 'Хөвсгөл',
@@ -420,9 +417,8 @@ const places = [
     rating_avg: 4.9, rating_count: 0, view_count: 0, images: [], amenities: [],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 16. ХЭНТИЙ
-  // ═══════════════════════════════════════════════════════════
+
+  // ХЭНТИЙ
   {
     name: 'Онон-Балжийн байгалийн цогцолбор',
     type: 'nature', province: 'Хэнтий',
@@ -444,9 +440,8 @@ const places = [
     rating_avg: 4.6, rating_count: 0, view_count: 0, images: [], amenities: [],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 17. ДОРНОГОВЬ
-  // ═══════════════════════════════════════════════════════════
+
+  // ДОРНОГОВЬ
   {
     name: 'Хамрын хийд',
     type: 'nature', province: 'Дорноговь',
@@ -458,9 +453,8 @@ const places = [
     rating_avg: 4.5, rating_count: 0, view_count: 0, images: [], amenities: [],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 18. БУЛГАН
-  // ═══════════════════════════════════════════════════════════
+
+  // БУЛГАН
   {
     name: 'Булган голын хөндий',
     type: 'nature', province: 'Булган',
@@ -472,9 +466,8 @@ const places = [
     rating_avg: 4.3, rating_count: 0, view_count: 0, images: [], amenities: [],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 19. ОРХОН
-  // ═══════════════════════════════════════════════════════════
+
+  // ОРХОН
   {
     name: 'Орхоны хөндий — ЮНЕСКО Дэлхийн өв',
     type: 'nature', province: 'Орхон',
@@ -486,9 +479,8 @@ const places = [
     rating_avg: 4.6, rating_count: 0, view_count: 0, images: [], amenities: [],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 20. СЭЛЭНГЭ
-  // ═══════════════════════════════════════════════════════════
+
+  // СЭЛЭНГЭ
   {
     name: 'Сэлэнгэ мөрний хөндий',
     type: 'nature', province: 'Сэлэнгэ',
@@ -500,9 +492,8 @@ const places = [
     rating_avg: 4.4, rating_count: 0, view_count: 0, images: [], amenities: [],
   },
 
-  // ═══════════════════════════════════════════════════════════
-  // 21. ГОВЬСҮМБЭР
-  // ═══════════════════════════════════════════════════════════
+
+  // ГОВЬСҮМБЭР
   {
     name: 'Хасагт нуур',
     type: 'nature', province: 'Говьсүмбэр',
@@ -520,51 +511,35 @@ async function seed() {
   const client = new MongoClient(MONGODB_URI);
   try {
     await client.connect();
-    console.log('✅ MongoDB-д холбогдлоо\n');
+    console.log('connected');
 
     const db = client.db(DB_NAME);
     const col = db.collection('places');
-
-    // Хуучин 21 аймгийн ерөнхий бичлэгийг устга
     const del = await col.deleteMany({
       type: 'nature',
       price_per_night: 0,
       rating_count: 0,
       province: { $exists: true }
     });
-    console.log(`🗑️  Хуучин ${del.deletedCount} бичлэг устгагдлаа`);
+    console.log(`  хуучин ${del.deletedCount} бичлэг устгагдлаа`);
 
     const now = new Date();
     const docs = places.map(p => ({ ...p, createdAt: now, updatedAt: now }));
     const result = await col.insertMany(docs);
-    console.log(`🎉 ${result.insertedCount} газар амжилттай оруулагдлаа!\n`);
+    console.log(`${result.insertedCount} газар оруулагдлаа`);
 
-    // Тойм
-    const nature  = places.filter(p => p.type === 'nature').length;
-    const resorts = places.filter(p => p.type === 'resort').length;
-    const featured = places.filter(p => p.is_featured).length;
-
-    console.log(`📊 Тойм:`);
-    console.log(`   🌿 Байгалийн газар: ${nature}`);
-    console.log(`   🏕️  Амралтын газар: ${resorts}`);
-    console.log(`   ⭐ Онцлох газар:    ${featured}\n`);
-
-    console.log('📍 Аймаг бүрээр:');
     const byProvince = {};
     places.forEach(p => {
-      if (!byProvince[p.province]) byProvince[p.province] = [];
-      byProvince[p.province].push(p.name);
+      byProvince[p.province] = (byProvince[p.province] ?? 0) + 1;
     });
-    Object.entries(byProvince).sort().forEach(([province, names]) => {
-      console.log(`\n  ${province} (${names.length}):`);
-      names.forEach(n => console.log(`    • ${n}`));
+    Object.entries(byProvince).sort().forEach(([province, count]) => {
+      console.log(`  ${province}: ${count}`);
     });
 
   } catch (err) {
-    console.error('❌ Алдаа:', err.message);
+    console.error('алдаа:', err.message);
   } finally {
     await client.close();
-    console.log('\n🔌 Холболт хаагдлаа');
   }
 }
 

@@ -3,12 +3,19 @@
  * Ажиллуулах: node scripts/generate-slugs.mjs
  */
 import mongoose from 'mongoose';
-import * as dotenv from 'dotenv';
+import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: join(__dirname, '../.env.local') });
+// .env.local-ийг гараар уншина
+try {
+  const env = readFileSync(join(__dirname, '../.env.local'), 'utf8');
+  for (const line of env.split('\n')) {
+    const m = line.match(/^([^#=]+)=(.*)$/);
+    if (m) process.env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, '');
+  }
+} catch { /* production-д env var шууд тохируулагдсан байна */ }
 
 const CYR = {
   а:'a',б:'b',в:'v',г:'g',д:'d',е:'ye',ё:'yo',ж:'j',з:'z',
@@ -39,10 +46,10 @@ const Place = mongoose.models.Place || mongoose.model('Place', PlaceSchema);
 
 async function main() {
   await mongoose.connect(process.env.MONGODB_URI);
-  console.log('✅ MongoDB холбогдлоо');
+  console.log('connected');
 
   const places = await Place.find({ slug: { $in: [null, '', undefined] } }).lean();
-  console.log(`📍 Slug байхгүй ${places.length} газар олдлоо`);
+  console.log(`${places.length} газарт slug байхгүй байна`);
 
   const usedSlugs = new Set(
     (await Place.find({ slug: { $nin: [null, '', undefined] } }).select('slug').lean()).map(p => p.slug)
@@ -63,7 +70,7 @@ async function main() {
     updated++;
   }
 
-  console.log(`\n✅ ${updated} газарт slug үүсгэгдлээ`);
+  console.log(`${updated} газарт slug үүсгэгдлээ`);
   await mongoose.disconnect();
 }
 
