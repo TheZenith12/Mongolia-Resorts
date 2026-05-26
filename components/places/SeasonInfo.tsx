@@ -2,17 +2,20 @@
 
 import { Sun, Thermometer, Snowflake, Info } from 'lucide-react';
 import type { SeasonInfo } from '@/lib/seasons';
+import { useLang } from '@/lib/lang-context';
 
 interface Props {
   season: SeasonInfo;
 }
 
 export default function SeasonInfoCard({ season }: Props) {
+  const { tr } = useLang();
+
   return (
     <div className="card p-5">
       <h3 className="font-semibold text-forest-900 mb-4 flex items-center gap-2">
         <Sun size={16} className="text-amber-500" />
-        Аялалын улирал
+        {tr('season_title')}
       </h3>
 
       <div className="space-y-3">
@@ -21,7 +24,7 @@ export default function SeasonInfoCard({ season }: Props) {
             <Sun size={14} className="text-green-600" />
           </div>
           <div>
-            <div className="text-xs text-forest-500 font-medium">Хамгийн тохиромжтой</div>
+            <div className="text-xs text-forest-500 font-medium">{tr('season_best')}</div>
             <div className="text-sm font-semibold text-forest-900">{season.best}</div>
           </div>
         </div>
@@ -31,7 +34,7 @@ export default function SeasonInfoCard({ season }: Props) {
             <Thermometer size={14} className="text-amber-600" />
           </div>
           <div>
-            <div className="text-xs text-forest-500 font-medium">Боломжтой</div>
+            <div className="text-xs text-forest-500 font-medium">{tr('season_good')}</div>
             <div className="text-sm font-semibold text-forest-900">{season.good}</div>
           </div>
         </div>
@@ -41,7 +44,7 @@ export default function SeasonInfoCard({ season }: Props) {
             <Snowflake size={14} className="text-blue-600" />
           </div>
           <div>
-            <div className="text-xs text-forest-500 font-medium">Хаалттай / хүйтэн</div>
+            <div className="text-xs text-forest-500 font-medium">{tr('season_avoid')}</div>
             <div className="text-sm font-semibold text-forest-900">{season.avoid}</div>
           </div>
         </div>

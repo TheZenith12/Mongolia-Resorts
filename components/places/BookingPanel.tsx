@@ -7,6 +7,7 @@ import { formatPrice, calculateNights } from '@/lib/utils';
 import { createBooking, getBookedDateRanges } from '@/lib/actions/auth';
 import { validateCoupon } from '@/lib/actions/coupons';
 import { toast } from 'react-hot-toast';
+import { useLang } from '@/lib/lang-context';
 
 interface Room {
   id: string;
@@ -22,6 +23,7 @@ interface Room {
 
 export default function BookingPanel({ place, profile }: any) {
   const router = useRouter();
+  const { tr } = useLang();
   const isResort = place.type === 'resort';
 
   const [rooms, setRooms]             = useState<Room[]>([]);
@@ -72,6 +74,7 @@ export default function BookingPanel({ place, profile }: any) {
     }
   }
 
+
   function removeCoupon() {
     setCouponCode('');
     setCouponResult(null);
@@ -98,16 +101,16 @@ export default function BookingPanel({ place, profile }: any) {
 
   async function handleBook() {
     if (!profile) {
-      toast.error('Захиалахын тулд нэвтрэх шаардлагатай');
+      toast.error(tr('book_login'));
       router.push(`/auth/login?redirect=/places/${place.id}`);
       return;
     }
-    if (!guestName.trim())  { toast.error('Нэрээ оруулна уу'); return; }
-    if (!guestPhone.trim()) { toast.error('Утасны дугаараа оруулна уу'); return; }
-    if (!checkIn || !checkOut) { toast.error('Огноо сонгоно уу'); return; }
-    if (nights < 1)  { toast.error('Буцах огноо буруу байна'); return; }
-    if (rooms.length > 0 && !selectedRoom) { toast.error('Өрөө сонгоно уу'); return; }
-    if (dateConflict) { toast.error('Сонгосон огноонд захиалга аль хэдийн байна'); return; }
+    if (!guestName.trim())  { toast.error(tr('book_name')); return; }
+    if (!guestPhone.trim()) { toast.error(tr('book_phone')); return; }
+    if (!checkIn || !checkOut) { toast.error(tr('book_checkin')); return; }
+    if (nights < 1)  { toast.error(tr('book_checkout')); return; }
+    if (rooms.length > 0 && !selectedRoom) { toast.error(tr('book_room')); return; }
+    if (dateConflict) { toast.error(tr('book_conflict')); return; }
 
     setLoading(true);
     try {
@@ -124,7 +127,7 @@ export default function BookingPanel({ place, profile }: any) {
         discount_amount: discount > 0 ? discount : undefined,
         notes:          undefined,
       });
-      toast.success('Захиалга амжилттай үүслээ!');
+      toast.success(tr('book_submit') + ' ✓');
       router.push(`/booking/${(booking as any).id}/payment`);
     } catch (err: any) {
       toast.error(err.message ?? 'Алдаа гарлаа');
@@ -139,12 +142,12 @@ export default function BookingPanel({ place, profile }: any) {
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 bg-forest-50 rounded-xl flex items-center justify-center text-xl">🌿</div>
           <div>
-            <div className="font-semibold text-forest-900 text-sm">Байгалийн газар</div>
-            <div className="text-xs text-forest-500">Үнэгүй нэвтрэх боломжтой</div>
+            <div className="font-semibold text-forest-900 text-sm">{tr('book_free_place')}</div>
+            <div className="text-xs text-forest-500">{tr('place_free')}</div>
           </div>
         </div>
         <p className="text-forest-600 text-sm leading-relaxed mb-4">
-          Энэ байгалийн үзэсгэлэнт газар нийтийн хэрэглээнд нээлттэй.
+          {tr('book_free_desc')}
         </p>
         {place.latitude && place.longitude && (
           <a
@@ -152,7 +155,7 @@ export default function BookingPanel({ place, profile }: any) {
             target="_blank" rel="noopener noreferrer"
             className="btn-primary w-full justify-center"
           >
-            Замын заалт авах <ArrowRight size={15} />
+            {tr('book_direction')} <ArrowRight size={15} />
           </a>
         )}
       </div>
@@ -161,7 +164,7 @@ export default function BookingPanel({ place, profile }: any) {
 
   return (
     <div className="card p-5 sm:p-6">
-      <h3 className="font-display text-xl font-semibold text-forest-900 mb-4">Захиалах</h3>
+      <h3 className="font-display text-xl font-semibold text-forest-900 mb-4">{tr('book_title')}</h3>
 
       {/* Room selection */}
       {loadingRooms ? (
@@ -170,7 +173,7 @@ export default function BookingPanel({ place, profile }: any) {
         </div>
       ) : rooms.length > 0 ? (
         <div className="mb-4">
-          <label className="block text-xs font-medium text-forest-500 uppercase tracking-wide mb-2">Өрөө сонгох</label>
+          <label className="block text-xs font-medium text-forest-500 uppercase tracking-wide mb-2">{tr('book_room')}</label>
           <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
             {rooms.map(room => (
               <button
@@ -208,7 +211,7 @@ export default function BookingPanel({ place, profile }: any) {
       ) : (
         <div className="mb-4 p-3 bg-forest-50 rounded-xl">
           <div className="text-sm font-semibold text-forest-900">
-            {formatPrice(place.price_per_night)}<span className="text-forest-400 font-normal text-xs"> / шөнө</span>
+            {formatPrice(place.price_per_night)}<span className="text-forest-400 font-normal text-xs"> {tr('per_night')}</span>
           </div>
         </div>
       )}
@@ -217,20 +220,20 @@ export default function BookingPanel({ place, profile }: any) {
         {/* Guest info */}
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-xs font-medium text-forest-500 mb-1 block">Нэр</label>
+            <label className="text-xs font-medium text-forest-500 mb-1 block">{tr('book_name')}</label>
             <div className="relative">
               <User size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-forest-400 pointer-events-none" />
               <input
                 type="text"
                 value={guestName}
                 onChange={e => setGuestName(e.target.value)}
-                placeholder="Таны нэр"
+                placeholder={tr('book_name')}
                 className="input-field pl-8 py-2 text-sm"
               />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-forest-500 mb-1 block">Утас</label>
+            <label className="text-xs font-medium text-forest-500 mb-1 block">{tr('book_phone')}</label>
             <div className="relative">
               <Phone size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-forest-400 pointer-events-none" />
               <input
@@ -247,7 +250,7 @@ export default function BookingPanel({ place, profile }: any) {
         {/* Dates */}
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-xs font-medium text-forest-500 mb-1 block">Ирэх өдөр</label>
+            <label className="text-xs font-medium text-forest-500 mb-1 block">{tr('book_checkin')}</label>
             <div className="relative">
               <Calendar size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-forest-400 pointer-events-none" />
               <input type="date" min={today} value={checkIn} onChange={e => setCheckIn(e.target.value)}
@@ -255,7 +258,7 @@ export default function BookingPanel({ place, profile }: any) {
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-forest-500 mb-1 block">Явах өдөр</label>
+            <label className="text-xs font-medium text-forest-500 mb-1 block">{tr('book_checkout')}</label>
             <div className="relative">
               <Calendar size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-forest-400 pointer-events-none" />
               <input type="date" min={checkIn || today} value={checkOut} onChange={e => setCheckOut(e.target.value)}
@@ -267,7 +270,7 @@ export default function BookingPanel({ place, profile }: any) {
         {/* Guests — only if no room */}
         {!selectedRoom && (
           <div>
-            <label className="text-xs font-medium text-forest-500 mb-1 block">Зочдын тоо</label>
+            <label className="text-xs font-medium text-forest-500 mb-1 block">{tr('book_guests')}</label>
             <div className="relative">
               <Users size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-forest-400 pointer-events-none" />
               <select value={guests} onChange={e => setGuests(Number(e.target.value))}
@@ -281,13 +284,13 @@ export default function BookingPanel({ place, profile }: any) {
         {/* Date conflict */}
         {dateConflict && (
           <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">
-            ⚠️ Сонгосон огноонд аль хэдийн захиалга байна. Өөр огноо сонгоно уу.
+            {tr('book_conflict')}
           </div>
         )}
 
         {/* Payment method */}
         <div>
-          <label className="text-xs font-medium text-forest-500 mb-2 block">Төлбөрийн хэлбэр</label>
+          <label className="text-xs font-medium text-forest-500 mb-2 block">{tr('book_payment')}</label>
           <div className="grid grid-cols-2 gap-2">
             {[
               { value: 'qpay',   label: 'QPay',  icon: <Smartphone size={14} /> },
@@ -308,7 +311,7 @@ export default function BookingPanel({ place, profile }: any) {
         {/* Coupon */}
         <div>
           <label className="text-xs font-medium text-forest-500 mb-1.5 flex items-center gap-1.5">
-            <Tag size={12} /> Купон код
+            <Tag size={12} /> {tr('book_coupon')}
           </label>
           {couponResult?.valid ? (
             <div className="flex items-center justify-between p-2.5 bg-green-50 border border-green-200 rounded-xl text-sm">
@@ -335,7 +338,7 @@ export default function BookingPanel({ place, profile }: any) {
                 disabled={couponLoading || !couponCode.trim()}
                 className="px-3 py-2 bg-forest-700 text-white rounded-xl text-xs font-medium disabled:opacity-50"
               >
-                {couponLoading ? <Loader2 size={13} className="animate-spin" /> : 'Хэрэглэх'}
+                {couponLoading ? <Loader2 size={13} className="animate-spin" /> : tr('book_coupon_apply')}
               </button>
             </div>
           )}
@@ -351,17 +354,17 @@ export default function BookingPanel({ place, profile }: any) {
             </div>
           )}
           <div className="flex justify-between text-forest-600">
-            <span>{formatPrice(price)} × {nights} шөнө</span>
+            <span>{formatPrice(price)} × {nights} {tr('book_nights')}</span>
             <span>{formatPrice(baseTotal)}</span>
           </div>
           {discount > 0 && (
             <div className="flex justify-between text-green-600">
-              <span>Купон хөнгөлөлт</span>
+              <span>{tr('book_discount')}</span>
               <span>−{formatPrice(discount)}</span>
             </div>
           )}
           <div className="flex justify-between font-semibold text-forest-900 pt-1.5 border-t border-forest-200">
-            <span>Нийт дүн</span>
+            <span>{tr('book_total')}</span>
             <span>{formatPrice(total)}</span>
           </div>
         </div>
@@ -374,13 +377,13 @@ export default function BookingPanel({ place, profile }: any) {
       >
         {loading ? (
           <span className="flex items-center gap-2">
-            <Loader2 size={16} className="animate-spin" /> Боловсруулж байна...
+            <Loader2 size={16} className="animate-spin" /> {tr('book_processing')}
           </span>
-        ) : <>Захиалах <ArrowRight size={16} /></>}
+        ) : <>{tr('book_submit')} <ArrowRight size={16} /></>}
       </button>
 
       <div className="flex items-center justify-center gap-1.5 mt-3 text-xs text-forest-400">
-        <Lock size={11} /> Таны мэдээлэл хамгаалагдсан
+        <Lock size={11} /> {tr('book_secure')}
       </div>
     </div>
   );

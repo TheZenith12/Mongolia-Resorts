@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Cloud, Wind, Droplets, Thermometer } from 'lucide-react';
+import { useLang } from '@/lib/lang-context';
 
 interface WeatherData {
   temp: number;
@@ -42,6 +43,7 @@ const PROVINCE_CITIES: Record<string, string> = {
 };
 
 export default function WeatherWidget({ province }: Props) {
+  const { tr } = useLang();
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -85,7 +87,7 @@ export default function WeatherWidget({ province }: Props) {
     <div className="card p-5">
       <h3 className="font-semibold text-forest-900 mb-3 flex items-center gap-2">
         <Cloud size={16} className="text-sky-500" />
-        Одоогийн цаг агаар
+        {tr('weather_title')}
         <span className="text-xs text-forest-400 font-normal ml-auto">{province}</span>
       </h3>
 
@@ -100,7 +102,7 @@ export default function WeatherWidget({ province }: Props) {
       <div className="grid grid-cols-3 gap-2 text-xs text-forest-600">
         <div className="flex items-center gap-1.5">
           <Thermometer size={12} className="text-amber-500" />
-          Мэдрэмж {weather.feels_like}°
+          {tr('weather_feels')} {weather.feels_like}°
         </div>
         <div className="flex items-center gap-1.5">
           <Droplets size={12} className="text-blue-500" />

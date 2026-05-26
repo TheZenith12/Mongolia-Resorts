@@ -1,6 +1,7 @@
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ChatWidget from '@/components/chat/ChatWidget';
+import { LangProvider } from '@/lib/lang-context';
 import { getSiteStats } from '@/lib/actions/places';
 import { getCurrentProfile } from '@/lib/actions/auth';
 import type { SiteStats } from '@/lib/types';
@@ -21,14 +22,16 @@ export default async function PublicLayout({ children }: { children: React.React
   ]);
 
   return (
-    <div className="flex flex-col min-h-dvh">
-      <Header stats={stats} profile={profile} />
-      <main className="flex-1">{children}</main>
-      <Footer />
-      {/* Chat widget — зөвхөн нэвтэрсэн хэрэглэгчид харагдана */}
-      {profile && !['super_admin', 'manager'].includes(profile.role) && (
-        <ChatWidget userId={(profile as any).id} />
-      )}
-    </div>
+    <LangProvider>
+      <div className="flex flex-col min-h-dvh">
+        <Header stats={stats} profile={profile} />
+        <main className="flex-1">{children}</main>
+        <Footer />
+        {/* Chat widget — зөвхөн нэвтэрсэн хэрэглэгчид харагдана */}
+        {profile && !['super_admin', 'manager'].includes(profile.role) && (
+          <ChatWidget userId={(profile as any).id} />
+        )}
+      </div>
+    </LangProvider>
   );
 }

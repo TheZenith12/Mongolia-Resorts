@@ -1,24 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Globe } from 'lucide-react';
+import { useLang } from '@/lib/lang-context';
 
 export default function LangToggle() {
-  const [lang, setLang] = useState<'mn' | 'en'>('mn');
-
-  useEffect(() => {
-    const saved = localStorage.getItem('lang') as 'mn' | 'en' | null;
-    if (saved) setLang(saved);
-  }, []);
+  const { lang, setLang } = useLang();
 
   function toggle() {
-    const next = lang === 'mn' ? 'en' : 'mn';
-    setLang(next);
-    localStorage.setItem('lang', next);
-    // Reload-гүйгээр document-ийн lang attr-г өөрчилнө
-    document.documentElement.lang = next === 'mn' ? 'mn-MN' : 'en-US';
-    // Custom event дамжуулна
-    window.dispatchEvent(new CustomEvent('langchange', { detail: next }));
+    setLang(lang === 'mn' ? 'en' : 'mn');
   }
 
   return (

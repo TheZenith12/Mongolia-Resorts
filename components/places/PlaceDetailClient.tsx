@@ -29,6 +29,7 @@ import {
 } from "@/lib/utils";
 import { toggleLike } from "@/lib/actions/auth";
 import { toast } from "react-hot-toast";
+import { useLang } from "@/lib/lang-context";
 import BookingPanel from "@/components/places/BookingPanel";
 import ReviewsSection from "@/components/places/ReviewsSection";
 import ShareButton from "@/components/places/ShareButton";
@@ -44,6 +45,7 @@ export default function PlaceDetailClient({
   season,
 }: any) {
   const router = useRouter();
+  const { tr } = useLang();
   const [liked, setLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(place.like_count ?? 0);
   const [imageIndex, setImageIndex] = useState(0);
@@ -66,7 +68,7 @@ export default function PlaceDetailClient({
 
   async function handleLike() {
     if (!profile) {
-      toast.error("Нэвтрэх шаардлагатай");
+      toast.error(tr('nav_login'));
       router.push("/auth/login");
       return;
     }
@@ -86,7 +88,7 @@ export default function PlaceDetailClient({
           href="/"
           className="inline-flex items-center gap-2 text-forest-500 text-sm hover:text-forest-700 transition-colors"
         >
-          <ArrowLeft size={16} /> Буцах
+          <ArrowLeft size={16} /> {tr('place_back')}
         </Link>
       </div>
 
@@ -229,18 +231,18 @@ export default function PlaceDetailClient({
                     {Number(place.rating_avg).toFixed(1)}
                   </span>
                   <span className="text-forest-500 text-sm">
-                    ({place.rating_count} үнэлгээ)
+                    ({place.rating_count} {tr('reviews_count')})
                   </span>
                 </div>
               )}
               <div className="flex items-center gap-1.5 text-forest-500 text-sm">
                 <Eye size={15} /> {place.view_count?.toLocaleString() ?? 0}{" "}
-                үзэлт
+                {tr('views')}
               </div>
               {isResort && place.price_per_night && (
                 <div className="flex items-center gap-1.5 text-forest-700 font-semibold">
                   <Calendar size={15} />
-                  {formatPrice(place.price_per_night)} / шөнө
+                  {formatPrice(place.price_per_night)} {tr('per_night')}
                 </div>
               )}
             </div>
@@ -249,7 +251,7 @@ export default function PlaceDetailClient({
             {place.description && (
               <div className="mb-10">
                 <h2 className="font-display text-2xl font-semibold text-forest-900 mb-4">
-                  Тайлбар
+                  {tr('place_description')}
                 </h2>
                 <div className="text-forest-600 leading-relaxed space-y-3">
                   {place.description
@@ -265,7 +267,7 @@ export default function PlaceDetailClient({
             {(place.phone || place.email || place.website) && (
               <div className="mb-10">
                 <h2 className="font-display text-2xl font-semibold text-forest-900 mb-4">
-                  Холбоо барих
+                  {tr('place_contact')}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {place.phone && (
@@ -277,7 +279,7 @@ export default function PlaceDetailClient({
                         <Phone size={18} className="text-forest-600" />
                       </div>
                       <div>
-                        <div className="text-xs text-forest-400">Утас</div>
+                        <div className="text-xs text-forest-400">{tr('place_phone')}</div>
                         <div className="text-sm font-medium text-forest-800">
                           {place.phone}
                         </div>
@@ -293,7 +295,7 @@ export default function PlaceDetailClient({
                         <Mail size={18} className="text-forest-600" />
                       </div>
                       <div>
-                        <div className="text-xs text-forest-400">И-мэйл</div>
+                        <div className="text-xs text-forest-400">{tr('place_email')}</div>
                         <div className="text-sm font-medium text-forest-800 truncate">
                           {place.email}
                         </div>
@@ -311,9 +313,9 @@ export default function PlaceDetailClient({
                         <Globe size={18} className="text-forest-600" />
                       </div>
                       <div>
-                        <div className="text-xs text-forest-400">Вэбсайт</div>
+                        <div className="text-xs text-forest-400">{tr('place_website')}</div>
                         <div className="text-sm font-medium text-forest-800">
-                          Нээх
+                          {tr('place_website')}
                         </div>
                       </div>
                     </a>
@@ -326,7 +328,7 @@ export default function PlaceDetailClient({
             {place.latitude && place.longitude && (
               <div className="mb-10">
                 <h2 className="font-display text-2xl font-semibold text-forest-900 mb-4">
-                  Байршил
+                  {tr('place_location')}
                 </h2>
                 <div className="h-72 rounded-2xl overflow-hidden border border-forest-100">
                   <iframe
@@ -344,7 +346,7 @@ export default function PlaceDetailClient({
                   rel="noopener noreferrer"
                   className="btn-secondary mt-3 text-sm inline-flex items-center gap-2"
                 >
-                  <MapPin size={15} /> Google Maps-ээр заалт авах
+                  <MapPin size={15} /> {tr('place_direction')}
                 </a>
               </div>
             )}
@@ -353,7 +355,7 @@ export default function PlaceDetailClient({
             {place.video_url && (
               <div className="mb-10">
                 <h2 className="font-display text-2xl font-semibold text-forest-900 mb-4">
-                  Бичлэг
+                  {tr('place_video')}
                 </h2>
                 <div className="rounded-2xl overflow-hidden border border-forest-100 bg-forest-950">
                   <video
@@ -394,7 +396,7 @@ export default function PlaceDetailClient({
         {similarPlaces.length > 0 && (
           <div className="mt-16 pt-10 border-t border-forest-100">
             <h2 className="font-display text-3xl font-semibold text-forest-900 mb-6">
-              Төстэй газрууд
+              {tr('place_similar')}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {similarPlaces.map((sp: any) => (
@@ -438,7 +440,7 @@ export default function PlaceDetailClient({
                     {sp.price_per_night && (
                       <div className="text-sm font-semibold text-amber-600">
                         {formatPrice(sp.price_per_night)}
-                        <span className="text-forest-400 font-normal text-xs"> / шөнө</span>
+                        <span className="text-forest-400 font-normal text-xs"> {tr('per_night')}</span>
                       </div>
                     )}
                   </div>

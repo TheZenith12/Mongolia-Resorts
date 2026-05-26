@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { SlidersHorizontal, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { MONGOLIAN_PROVINCES } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useLang } from '@/lib/lang-context';
 
 interface PlacesFilterSidebarProps {
   current: {
@@ -13,15 +14,10 @@ interface PlacesFilterSidebarProps {
   };
 }
 
-const RATING_OPTIONS = [
-  { value: '',    label: 'Бүгд' },
-  { value: '4',   label: '4+ ⭐' },
-  { value: '3',   label: '3+ ⭐' },
-  { value: '2',   label: '2+ ⭐' },
-];
-
 export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProps) {
   const router = useRouter();
+  const { tr } = useLang();
+
   const [type, setType]           = useState(current.type ?? '');
   const [province, setProvince]   = useState(current.province ?? '');
   const [minPrice, setMinPrice]   = useState(current.minPrice ?? '');
@@ -32,6 +28,13 @@ export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProp
   const [ratingOpen, setRatingOpen] = useState(true);
 
   const activeCount = [type, province, minPrice, maxPrice, minRating].filter(Boolean).length;
+
+  const RATING_OPTIONS = [
+    { value: '',  label: tr('filter_rating_all') },
+    { value: '4', label: '4+ ⭐' },
+    { value: '3', label: '3+ ⭐' },
+    { value: '2', label: '2+ ⭐' },
+  ];
 
   function apply() {
     const params = new URLSearchParams();
@@ -54,7 +57,7 @@ export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProp
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2 font-semibold text-forest-900">
-          <SlidersHorizontal size={16} /> Шүүлтүүр
+          <SlidersHorizontal size={16} /> {tr('filter_title')}
           {activeCount > 0 && (
             <span className="w-5 h-5 rounded-full bg-forest-700 text-white text-[10px] flex items-center justify-center">
               {activeCount}
@@ -63,7 +66,7 @@ export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProp
         </div>
         {activeCount > 0 && (
           <button onClick={reset} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1">
-            <X size={12} /> Цэвэрлэх
+            <X size={12} /> {tr('filter_reset')}
           </button>
         )}
       </div>
@@ -71,13 +74,13 @@ export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProp
       {/* Type filter */}
       <div className="mb-5">
         <label className="block text-xs font-semibold text-forest-500 uppercase tracking-wide mb-2.5">
-          Газрын төрөл
+          {tr('filter_type')}
         </label>
         <div className="space-y-2">
           {[
-            { value: '',       label: 'Бүгд',            icon: '🗺️' },
-            { value: 'resort', label: 'Амралтын газар',  icon: '🏕' },
-            { value: 'nature', label: 'Байгалийн газар', icon: '🌿' },
+            { value: '',       label: tr('filter_all'),    icon: '🗺️' },
+            { value: 'resort', label: tr('filter_resort'), icon: '🏕' },
+            { value: 'nature', label: tr('filter_nature'), icon: '🌿' },
           ].map((opt) => (
             <button
               key={opt.value}
@@ -101,7 +104,7 @@ export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProp
           onClick={() => setProvOpen(!provOpen)}
           className="w-full flex items-center justify-between text-xs font-semibold text-forest-500 uppercase tracking-wide mb-2.5"
         >
-          Аймаг
+          {tr('filter_province')}
           {provOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
         {provOpen && (
@@ -110,7 +113,7 @@ export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProp
             onChange={(e) => setProvince(e.target.value)}
             className="input-field text-sm py-2"
           >
-            <option value="">Бүх аймаг</option>
+            <option value="">{tr('filter_all_prov')}</option>
             {MONGOLIAN_PROVINCES.map((p) => (
               <option key={p} value={p}>{p}</option>
             ))}
@@ -124,7 +127,7 @@ export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProp
           onClick={() => setRatingOpen(!ratingOpen)}
           className="w-full flex items-center justify-between text-xs font-semibold text-forest-500 uppercase tracking-wide mb-2.5"
         >
-          Үнэлгээ
+          {tr('filter_rating')}
           {ratingOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
         {ratingOpen && (
@@ -153,7 +156,7 @@ export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProp
           onClick={() => setPriceOpen(!priceOpen)}
           className="w-full flex items-center justify-between text-xs font-semibold text-forest-500 uppercase tracking-wide mb-2.5"
         >
-          Үнийн хязгаар
+          {tr('filter_price')}
           {priceOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
         {priceOpen && (
@@ -164,7 +167,7 @@ export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProp
                 type="number"
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
-                placeholder="Доод үнэ"
+                placeholder={tr('hero_min_price')}
                 className="input-field pl-7 text-sm py-2"
               />
             </div>
@@ -174,7 +177,7 @@ export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProp
                 type="number"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
-                placeholder="Дээд үнэ"
+                placeholder={tr('hero_max_price')}
                 className="input-field pl-7 text-sm py-2"
               />
             </div>
@@ -183,7 +186,7 @@ export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProp
       </div>
 
       <button onClick={apply} className="btn-primary w-full text-sm">
-        Шүүлтүүр хэрэглэх
+        {tr('filter_apply')}
       </button>
     </div>
   );

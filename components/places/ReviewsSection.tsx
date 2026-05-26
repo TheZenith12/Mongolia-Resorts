@@ -6,6 +6,7 @@ import { createReview } from '@/lib/actions/auth';
 import { toast } from 'react-hot-toast';
 import { getRelativeTime, getInitials } from '@/lib/utils';
 import type { Review, Profile } from '@/lib/types';
+import { useLang } from '@/lib/lang-context';
 
 interface ReviewsSectionProps {
   placeId: string;
@@ -14,6 +15,7 @@ interface ReviewsSectionProps {
 }
 
 export default function ReviewsSection({ placeId, reviews, profile }: ReviewsSectionProps) {
+  const { tr } = useLang();
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [title, setTitle] = useState('');
@@ -41,14 +43,14 @@ export default function ReviewsSection({ placeId, reviews, profile }: ReviewsSec
         if (data.secure_url) urls.push(data.secure_url);
       }
       setReviewImages(prev => [...prev, ...urls].slice(0, 4));
-    } catch { toast.error('Зураг upload хийхэд алдаа гарлаа'); }
+    } catch { toast.error('Upload error'); }
     finally { setUploadingImg(false); }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!rating) { toast.error('Үнэлгээ өгнө үү'); return; }
-    if (!body)   { toast.error('Сэтгэгдэл бичнэ үү'); return; }
+    if (!rating) { toast.error('⭐'); return; }
+    if (!body)   { toast.error(tr('reviews_body_placeholder')); return; }
 
     setLoading(true);
     try {
@@ -70,7 +72,7 @@ export default function ReviewsSection({ placeId, reviews, profile }: ReviewsSec
         ...localReviews,
       ]);
       setRating(0); setTitle(''); setBody(''); setReviewImages([]);
-      toast.success('Сэтгэгдэл амжилттай нэмэгдлээ!');
+      toast.success(tr('reviews_submit') + ' ✓');
     } catch (err: any) {
       toast.error(err.message ?? 'Алдаа гарлаа');
     } finally {
@@ -85,9 +87,9 @@ export default function ReviewsSection({ placeId, reviews, profile }: ReviewsSec
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <h2 className="font-display text-2xl font-semibold text-forest-900">Үнэлгээ & Сэтгэгдэл</h2>
+        <h2 className="font-display text-2xl font-semibold text-forest-900">{tr('reviews_title')}</h2>
         <span className="badge bg-forest-50 text-forest-700 border-forest-200">
-          ⭐ {avg} · {localReviews.length} сэтгэгдэл
+          ⭐ {avg} · {localReviews.length} {tr('reviews_count')}
         </span>
       </div>
 
@@ -123,13 +125,13 @@ export default function ReviewsSection({ placeId, reviews, profile }: ReviewsSec
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Гарчиг (заавал биш)"
+            placeholder={tr('reviews_title_placeholder')}
             className="input-field mb-3"
           />
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="Сэтгэгдлээ бичнэ үү..."
+            placeholder={tr('reviews_body_placeholder')}
             rows={3}
             className="input-field resize-none mb-3"
             required
@@ -153,8 +155,8 @@ export default function ReviewsSection({ placeId, reviews, profile }: ReviewsSec
             {reviewImages.length < 4 && (
               <label className="inline-flex items-center gap-1.5 text-xs text-forest-500 hover:text-forest-700 cursor-pointer py-1.5 px-3 rounded-lg border border-forest-200 hover:border-forest-400 transition-colors">
                 {uploadingImg
-                  ? <><Loader2 size={13} className="animate-spin" /> Байршуулж байна...</>
-                  : <><Camera size={13} /> Зураг нэмэх (дээд тал 4)</>
+                  ? <><Loader2 size={13} className="animate-spin" /> {tr('reviews_uploading')}</>
+                  : <><Camera size={13} /> {tr('reviews_add_photo')}</>
                 }
                 <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" disabled={uploadingImg} />
               </label>
@@ -162,15 +164,15 @@ export default function ReviewsSection({ placeId, reviews, profile }: ReviewsSec
           </div>
 
           <button type="submit" disabled={loading || uploadingImg} className="btn-primary text-sm disabled:opacity-50">
-            {loading ? 'Нэмж байна...' : 'Сэтгэгдэл нэмэх'}
+            {loading ? tr('reviews_adding') : tr('reviews_submit')}
           </button>
         </form>
       ) : (
         <div className="bg-forest-50 rounded-2xl border border-forest-100 p-5 mb-8 flex items-center gap-3">
           <MessageSquare size={20} className="text-forest-400" />
           <span className="text-forest-600 text-sm">
-            Сэтгэгдэл нэмэхийн тулд{' '}
-            <a href="/auth/login" className="text-forest-700 font-semibold underline">нэвтэрнэ үү</a>
+            {tr('reviews_login')}{' '}
+            <a href="/auth/login" className="text-forest-700 font-semibold underline">{tr('reviews_login_link')}</a>
           </span>
         </div>
       )}
@@ -213,7 +215,7 @@ export default function ReviewsSection({ placeId, reviews, profile }: ReviewsSec
         {localReviews.length === 0 && (
           <div className="text-center py-10 text-forest-400">
             <MessageSquare size={32} className="mx-auto mb-2 opacity-40" />
-            <p className="text-sm">Одоогоор сэтгэгдэл байхгүй байна. Эхний сэтгэгдэл үлдээнэ үү!</p>
+            <p className="text-sm">{tr('reviews_empty')}</p>
           </div>
         )}
       </div>

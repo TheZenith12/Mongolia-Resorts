@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import type { SiteStats, Profile } from '@/lib/types';
 import DarkModeToggle from '@/components/layout/DarkModeToggle';
 import LangToggle from '@/components/layout/LangToggle';
+import { useLang } from '@/lib/lang-context';
 
 interface HeaderProps {
   stats: SiteStats;
@@ -19,7 +20,7 @@ export default function Header({ stats, profile }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
+  const { tr } = useLang();
 
   async function handleSignOut() {
     setUserMenuOpen(false);
@@ -27,10 +28,10 @@ export default function Header({ stats, profile }: HeaderProps) {
   }
 
   const navLinks = [
-    { href: '/',                label: 'Нүүр' },
-    { href: '/places?type=resort',  label: '🏕 Амралтын газар' },
-    { href: '/places?type=nature',  label: '🌿 Байгалийн газар' },
-    { href: '/map',             label: '🗺️ Газрын зураг' },
+    { href: '/',                     label: tr('nav_home') },
+    { href: '/places?type=resort',   label: tr('nav_resorts') },
+    { href: '/places?type=nature',   label: tr('nav_nature') },
+    { href: '/map',                  label: tr('nav_map') },
   ];
 
   return (
@@ -41,19 +42,19 @@ export default function Header({ stats, profile }: HeaderProps) {
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
               <Eye size={12} className="text-amber-400" />
-              <span>{stats.total_views.toLocaleString()} үзэлт</span>
+              <span>{stats.total_views.toLocaleString()} {tr('stat_views')}</span>
             </span>
             <span className="flex items-center gap-1.5">
               <Building2 size={12} className="text-amber-400" />
-              <span>{stats.total_resorts} амралтын газар</span>
+              <span>{stats.total_resorts} {tr('stat_resorts')}</span>
             </span>
             <span className="flex items-center gap-1.5 hidden sm:flex">
               <Leaf size={12} className="text-amber-400" />
-              <span>{stats.total_nature} байгалийн газар</span>
+              <span>{stats.total_nature} {tr('stat_nature')}</span>
             </span>
           </div>
           <span className="text-forest-400 hidden md:block">
-            🇲🇳 Монголын хамгийн том амралтын платформ
+            🇲🇳 {tr('footer_tagline')}
           </span>
         </div>
       </div>
@@ -119,7 +120,7 @@ export default function Header({ stats, profile }: HeaderProps) {
                         className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-forest-700 hover:bg-forest-50"
                         onClick={() => setUserMenuOpen(false)}
                       >
-                        <Building2 size={15} /> Удирдлагын самбар
+                        <Building2 size={15} /> {tr('nav_admin')}
                       </Link>
                     )}
                     <Link
@@ -127,21 +128,21 @@ export default function Header({ stats, profile }: HeaderProps) {
                       className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-forest-700 hover:bg-forest-50"
                       onClick={() => setUserMenuOpen(false)}
                     >
-                      <MapPin size={15} /> Миний захиалгууд
+                      <MapPin size={15} /> {tr('nav_bookings')}
                     </Link>
                     <Link
                       href="/profile/bookings?tab=favorites"
                       className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-forest-700 hover:bg-forest-50"
                       onClick={() => setUserMenuOpen(false)}
                     >
-                      <Heart size={15} /> Дуртай газрууд
+                      <Heart size={15} /> {tr('nav_favorites')}
                     </Link>
                     <hr className="border-forest-100 my-1" />
                     <button
                       onClick={handleSignOut}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
                     >
-                      <LogOut size={15} /> Гарах
+                      <LogOut size={15} /> {tr('nav_logout')}
                     </button>
                   </div>
                 )}
@@ -149,10 +150,10 @@ export default function Header({ stats, profile }: HeaderProps) {
             ) : (
               <div className="flex items-center gap-2">
                 <Link href="/auth/login" className="btn-secondary text-xs px-4 py-2">
-                  Нэвтрэх
+                  {tr('nav_login')}
                 </Link>
                 <Link href="/auth/register" className="btn-primary text-xs px-4 py-2 hidden sm:flex">
-                  Бүртгүүлэх
+                  {tr('nav_register')}
                 </Link>
               </div>
             )}
@@ -183,6 +184,24 @@ export default function Header({ stats, profile }: HeaderProps) {
                 {link.label}
               </Link>
             ))}
+            {!profile && (
+              <div className="pt-2 flex gap-2 px-2">
+                <Link
+                  href="/auth/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="btn-secondary text-xs px-4 py-2 flex-1 text-center"
+                >
+                  {tr('nav_login')}
+                </Link>
+                <Link
+                  href="/auth/register"
+                  onClick={() => setMobileOpen(false)}
+                  className="btn-primary text-xs px-4 py-2 flex-1 text-center"
+                >
+                  {tr('nav_register')}
+                </Link>
+              </div>
+            )}
           </nav>
         )}
       </div>

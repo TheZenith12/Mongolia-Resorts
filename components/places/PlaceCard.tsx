@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { MapPin, Star, Eye, Heart, Tent, Leaf, ArrowRight } from 'lucide-react';
 import { cn, formatPrice, getPlaceTypeLabel } from '@/lib/utils';
 import type { Place } from '@/lib/types';
+import { useLang } from '@/lib/lang-context';
 
 interface PlaceCardProps {
   place: Place;
@@ -15,6 +16,7 @@ interface PlaceCardProps {
 }
 
 export default function PlaceCard({ place, liked = false, onLike, likeLoading = false, className }: PlaceCardProps) {
+  const { tr } = useLang();
   const isResort = place.type === 'resort';
 
   return (
@@ -73,7 +75,7 @@ export default function PlaceCard({ place, liked = false, onLike, likeLoading = 
           <div className="absolute bottom-3 left-3 glass px-2.5 py-1 rounded-lg">
             <span className="text-forest-900 text-xs font-semibold">
               {formatPrice(place.price_per_night)}
-              <span className="text-forest-500 font-normal"> / шөнө</span>
+              <span className="text-forest-500 font-normal"> {tr('per_night')}</span>
             </span>
           </div>
         )}
@@ -123,7 +125,7 @@ export default function PlaceCard({ place, liked = false, onLike, likeLoading = 
             href={`/places/${place.slug ?? place.id}`}
             className="flex items-center gap-0.5 text-forest-700 text-[10px] sm:text-xs font-medium hover:text-forest-900 transition-colors"
           >
-            <span className="hidden sm:inline">Дэлгэрэнгүй</span>
+            <span className="hidden sm:inline">{tr('view_detail')}</span>
             <ArrowRight size={11} />
           </Link>
         </div>
