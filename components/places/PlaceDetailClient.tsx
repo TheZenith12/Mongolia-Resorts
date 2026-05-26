@@ -32,12 +32,16 @@ import { toast } from "react-hot-toast";
 import BookingPanel from "@/components/places/BookingPanel";
 import ReviewsSection from "@/components/places/ReviewsSection";
 import ShareButton from "@/components/places/ShareButton";
+import SeasonInfoCard from "@/components/places/SeasonInfo";
+import WeatherWidget from "@/components/places/WeatherWidget";
+import type { SeasonInfo } from "@/lib/seasons";
 
 export default function PlaceDetailClient({
   place,
   initialLiked,
   profile,
   similarPlaces = [],
+  season,
 }: any) {
   const router = useRouter();
   const [liked, setLiked] = useState(initialLiked);
@@ -374,8 +378,14 @@ export default function PlaceDetailClient({
 
           {/* Booking panel — mobile: агуулгын дараа, desktop: sticky sidebar */}
           <div className="lg:col-span-1 order-first lg:order-last">
-            <div className="lg:sticky lg:top-24">
+            <div className="lg:sticky lg:top-24 space-y-4">
               <BookingPanel place={place} profile={profile} />
+              {place.province && (
+                <WeatherWidget province={place.province} />
+              )}
+              {season && (
+                <SeasonInfoCard season={season} />
+              )}
             </div>
           </div>
         </div>

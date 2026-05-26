@@ -41,6 +41,7 @@ QPAY_PASSWORD=
 QPAY_INVOICE_CODE=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
+RESEND_API_KEY=          # Email мэдэгдэл (заавал биш)
 ```
 
 ## Super Admin болгох

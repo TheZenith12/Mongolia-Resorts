@@ -10,26 +10,31 @@ async function getDashboardData(role: string, userId: string) {
     await connectDB();
 
     if (role === 'super_admin') {
-      const [places, bookings, reviewCount] = await Promise.all([
+      const [places, bookings, reviewCount, recentBookings] = await Promise.all([
         Place.find({}).select('type view_count is_published').lean(),
-        Booking.find({}).select('total_amount payment_status created_at status').lean(),
+        Booking.find({}).select('total_amount payment_status created_at status guest_name guest_phone check_in check_out').lean(),
         Review.countDocuments(),
+        Booking.find({})
+          .select('guest_name guest_phone check_in check_out status payment_status total_amount')
+          .sort({ created_at: -1 }).limit(5).lean(),
       ]);
 
       const paidBookings = bookings.filter((b: any) => b.payment_status === 'paid');
 
       return {
         isManager: false, placeName: null, assignedPlaceId: null,
-        places:         places.length,
+        places:          places.length,
         publishedPlaces: places.filter((p: any) => p.is_published).length,
-        bookings:       bookings.length,
-        paidBookings:   paidBookings.length,
-        totalRevenue:   paidBookings.reduce((a, b: any) => a + b.total_amount, 0),
-        reviews:        reviewCount,
-        totalViews:     places.reduce((a, p: any) => a + (p.view_count ?? 0), 0),
-        monthlyRevenue: getMonthlyRevenue(paidBookings as any[]),
-        recentBookings: [],
-        occupancyRate:  null,
+        bookings:        bookings.length,
+        paidBookings:    paidBookings.length,
+        totalRevenue:    paidBookings.reduce((a, b: any) => a + b.total_amount, 0),
+        reviews:         reviewCount,
+        totalViews:      places.reduce((a, p: any) => a + (p.view_count ?? 0), 0),
+        monthlyRevenue:  getMonthlyRevenue(paidBookings as any[]),
+        recentBookings:  recentBookings.map((b: any) => ({
+          ...b, id: b._id.toString(), created_at: b.created_at?.toISOString(),
+        })),
+        occupancyRate:   null,
       };
     }
 
@@ -202,56 +207,58 @@ export default async function AdminDashboard() {
         })}
       </div>
 
-      {stats.isManager && (
+      {/* Revenue chart — both manager and super_admin */}
+      {stats.monthlyRevenue.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {stats.monthlyRevenue.length > 0 && (
-            <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="font-semibold text-forest-900 flex items-center gap-2">
-                  <TrendingUp size={16} className="text-forest-500" /> Сарын орлого
-                </h2>
-                <span className="text-xs text-forest-400">Сүүлийн 6 сар</span>
-              </div>
-              <RevenueChart data={stats.monthlyRevenue} />
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-semibold text-forest-900 flex items-center gap-2">
+                <TrendingUp size={16} className="text-forest-500" /> Сарын орлого
+              </h2>
+              <span className="text-xs text-forest-400">Сүүлийн 6 сар</span>
             </div>
-          )}
-
-          <div className="space-y-4">
-            {stats.occupancyRate !== null && (
-              <div className="bg-white rounded-2xl border border-gray-100 p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Users size={15} className="text-forest-500" />
-                  <span className="text-sm font-semibold text-forest-900">Дүүргэлт (30 хоног)</span>
-                </div>
-                <div className="text-3xl font-bold text-forest-900 mb-2">{stats.occupancyRate}%</div>
-                <div className="w-full bg-forest-100 rounded-full h-2">
-                  <div
-                    className="bg-forest-600 h-2 rounded-full transition-all duration-700"
-                    style={{ width: `${stats.occupancyRate}%` }}
-                  />
-                </div>
-                <p className="text-xs text-forest-400 mt-2">Сүүлийн 30 хоногт</p>
-              </div>
-            )}
-
-            <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-2">
-              <p className="text-xs font-semibold text-forest-500 uppercase tracking-wide mb-3">Хурдан холбоос</p>
-              {[
-                { href: '/admin/bookings',    label: 'Захиалгууд харах',   icon: CalendarCheck },
-                { href: '/admin/availability', label: 'Огноо блоклох',     icon: Clock },
-                { href: '/admin/reviews',      label: 'Сэтгэгдлүүд',       icon: Star },
-              ].map(l => (
-                <Link key={l.href} href={l.href}
-                  className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-forest-50 text-sm text-forest-700 transition-colors">
-                  <l.icon size={14} className="text-forest-400" /> {l.label}
-                </Link>
-              ))}
-            </div>
+            <RevenueChart data={stats.monthlyRevenue} />
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-2">
+            <p className="text-xs font-semibold text-forest-500 uppercase tracking-wide mb-3">Хурдан холбоос</p>
+            {(stats.isManager
+              ? [
+                  { href: '/admin/bookings',    label: 'Захиалгууд',   icon: CalendarCheck },
+                  { href: '/admin/availability', label: 'Огноо блоклох', icon: Clock },
+                  { href: '/admin/reviews',      label: 'Сэтгэгдлүүд',  icon: Star },
+                ]
+              : [
+                  { href: '/admin/bookings',  label: 'Захиалгууд',    icon: CalendarCheck },
+                  { href: '/admin/places',    label: 'Газрууд',       icon: MapPin },
+                  { href: '/admin/coupons',   label: 'Купонууд',      icon: TrendingUp },
+                  { href: '/admin/users',     label: 'Хэрэглэгчид',   icon: Users },
+                ]
+            ).map(l => (
+              <Link key={l.href} href={l.href}
+                className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-forest-50 text-sm text-forest-700 transition-colors">
+                <l.icon size={14} className="text-forest-400" /> {l.label}
+              </Link>
+            ))}
           </div>
         </div>
       )}
 
-      {stats.isManager && stats.recentBookings.length > 0 && (
+      {stats.isManager && stats.occupancyRate !== null && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 max-w-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <Users size={15} className="text-forest-500" />
+            <span className="text-sm font-semibold text-forest-900">Дүүргэлт (30 хоног)</span>
+          </div>
+          <div className="text-3xl font-bold text-forest-900 mb-2">{stats.occupancyRate}%</div>
+          <div className="w-full bg-forest-100 rounded-full h-2">
+            <div className="bg-forest-600 h-2 rounded-full transition-all duration-700"
+              style={{ width: `${stats.occupancyRate}%` }} />
+          </div>
+          <p className="text-xs text-forest-400 mt-2">Сүүлийн 30 хоногт</p>
+        </div>
+      )}
+
+      {stats.recentBookings.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="flex items-center justify-between px-4 lg:px-6 py-4 border-b border-gray-100">
             <h2 className="font-semibold text-forest-900">Сүүлийн захиалгууд</h2>

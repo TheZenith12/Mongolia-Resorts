@@ -8,6 +8,7 @@ import { signOut as nextAuthSignOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import type { SiteStats, Profile } from '@/lib/types';
 import DarkModeToggle from '@/components/layout/DarkModeToggle';
+import LangToggle from '@/components/layout/LangToggle';
 
 interface HeaderProps {
   stats: SiteStats;
@@ -156,6 +157,7 @@ export default function Header({ stats, profile }: HeaderProps) {
               </div>
             )}
 
+            <LangToggle />
             <DarkModeToggle />
 
             {/* Mobile menu toggle */}

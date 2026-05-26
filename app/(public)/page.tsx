@@ -14,6 +14,7 @@ const defaultStats: SiteStats = {
 };
 
 export const metadata: Metadata = {
+  // Нүүр хуудасны canonical — search params-аас үл хамааран үргэлж /
   alternates: { canonical: BASE_URL },
 };
 

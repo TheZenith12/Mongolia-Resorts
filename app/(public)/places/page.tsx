@@ -44,14 +44,21 @@ export async function generateMetadata({ searchParams }: PlacesPageProps): Promi
     title = `"${search}" — хайлтын үр дүн`;
   }
 
+  // Canonical URL: зөвхөн type + province шүүлтүүр индексэд тустай
   const canonical = new URL(`${BASE_URL}/places`);
-  if (type) canonical.searchParams.set('type', type);
+  if (type)     canonical.searchParams.set('type', type);
   if (province) canonical.searchParams.set('province', province);
+
+  // Search хайлт, pagination, бусад params → noindex + canonical → /places
+  const isSearchResult = !!search;
+  const isPagination   = !!(searchParams.page && parseInt(searchParams.page) > 1);
+  const shouldNoIndex  = isSearchResult || isPagination;
 
   return {
     title,
     description,
     alternates: { canonical: canonical.toString() },
+    robots: shouldNoIndex ? { index: false, follow: true } : undefined,
     openGraph: {
       title: `${title} | Монгол Нутаг`,
       description,

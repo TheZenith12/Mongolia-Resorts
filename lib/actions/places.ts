@@ -8,6 +8,7 @@ import type { Place as PlaceType } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { toSlug } from '@/lib/slug';
+import { sendPlaceApproved, sendPlaceRejected } from '@/lib/email';
 
 // ── Slug хэрэгслүүд ────────────────────────────────────────────────────────────
 async function generateUniqueSlug(name: string, excludeId?: string): Promise<string> {
@@ -412,18 +413,40 @@ export async function reviewPlace(id: string, action: 'approve' | 'reject', reas
   const { role } = await getAuthContext();
   if (role !== 'super_admin') throw new Error('Эрх хүрэлцэхгүй');
 
+  const place = await Place.findById(id).lean() as any;
+
   if (action === 'approve') {
     await Place.findByIdAndUpdate(id, {
       status:       'approved',
       is_published: true,
       reject_reason: null,
     });
+    // Email мэдэгдэл
+    if (place?.submitted_by_email && place?.submitted_by_name) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+      await sendPlaceApproved({
+        to:            place.submitted_by_email,
+        submitterName: place.submitted_by_name,
+        placeName:     place.name,
+        placeUrl:      `${appUrl}/places/${place.slug ?? id}`,
+      });
+    }
   } else {
+    const rejectReason = reason ?? 'Шалтгаан заагдаагүй';
     await Place.findByIdAndUpdate(id, {
       status:        'rejected',
       is_published:  false,
-      reject_reason: reason ?? 'Шалтгаан заагдаагүй',
+      reject_reason: rejectReason,
     });
+    // Email мэдэгдэл
+    if (place?.submitted_by_email && place?.submitted_by_name) {
+      await sendPlaceRejected({
+        to:            place.submitted_by_email,
+        submitterName: place.submitted_by_name,
+        placeName:     place.name,
+        reason:        rejectReason,
+      });
+    }
   }
 
   revalidatePath('/admin/places');

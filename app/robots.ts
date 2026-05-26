@@ -7,12 +7,19 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin/', '/api/', '/auth/'],
-      },
-      {
-        userAgent: 'Googlebot',
-        allow: '/',
-        disallow: ['/admin/', '/api/', '/auth/'],
+        disallow: [
+          '/admin/',
+          '/api/',
+          '/auth/',
+          // Search param-тай хуудасны duplicate-г хаана
+          '/*?search=*',
+          '/*?page=*',
+          '/*?minPrice=*',
+          '/*?maxPrice=*',
+          '/*?minRating=*',
+          '/*?sort=*',
+          '/*?tab=*',
+        ],
       },
     ],
     sitemap: `${BASE_URL}/sitemap.xml`,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Star, MessageSquare } from 'lucide-react';
+import { Star, MessageSquare, Camera, X, Loader2 } from 'lucide-react';
 import { createReview } from '@/lib/actions/auth';
 import { toast } from 'react-hot-toast';
 import { getRelativeTime, getInitials } from '@/lib/utils';
@@ -20,6 +20,30 @@ export default function ReviewsSection({ placeId, reviews, profile }: ReviewsSec
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(false);
   const [localReviews, setLocalReviews] = useState<Review[]>(reviews);
+  const [reviewImages, setReviewImages] = useState<string[]>([]);
+  const [uploadingImg, setUploadingImg] = useState(false);
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    if (!cloudName) return;
+    setUploadingImg(true);
+    try {
+      const urls: string[] = [];
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('upload_preset', 'mongolian_resorts');
+        fd.append('folder', 'reviews');
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.secure_url) urls.push(data.secure_url);
+      }
+      setReviewImages(prev => [...prev, ...urls].slice(0, 4));
+    } catch { toast.error('Зураг upload хийхэд алдаа гарлаа'); }
+    finally { setUploadingImg(false); }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +52,7 @@ export default function ReviewsSection({ placeId, reviews, profile }: ReviewsSec
 
     setLoading(true);
     try {
-      await createReview(placeId, rating, title, body);
+      await createReview(placeId, rating, title, body, reviewImages);
       setLocalReviews([
         {
           id: Date.now().toString(),
@@ -38,14 +62,14 @@ export default function ReviewsSection({ placeId, reviews, profile }: ReviewsSec
           rating,
           title: title || null,
           body,
-          images: [],
+          images: reviewImages,
           is_verified: false,
           created_at: new Date().toISOString(),
           user: profile ?? undefined,
         },
         ...localReviews,
       ]);
-      setRating(0); setTitle(''); setBody('');
+      setRating(0); setTitle(''); setBody(''); setReviewImages([]);
       toast.success('Сэтгэгдэл амжилттай нэмэгдлээ!');
     } catch (err: any) {
       toast.error(err.message ?? 'Алдаа гарлаа');
@@ -110,7 +134,34 @@ export default function ReviewsSection({ placeId, reviews, profile }: ReviewsSec
             className="input-field resize-none mb-3"
             required
           />
-          <button type="submit" disabled={loading} className="btn-primary text-sm">
+          {/* Image upload */}
+          <div className="mb-3">
+            {reviewImages.length > 0 && (
+              <div className="flex gap-2 mb-2 flex-wrap">
+                {reviewImages.map((url, i) => (
+                  <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden group">
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <button type="button"
+                      onClick={() => setReviewImages(prev => prev.filter((_, j) => j !== i))}
+                      className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      <X size={14} className="text-white" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {reviewImages.length < 4 && (
+              <label className="inline-flex items-center gap-1.5 text-xs text-forest-500 hover:text-forest-700 cursor-pointer py-1.5 px-3 rounded-lg border border-forest-200 hover:border-forest-400 transition-colors">
+                {uploadingImg
+                  ? <><Loader2 size={13} className="animate-spin" /> Байршуулж байна...</>
+                  : <><Camera size={13} /> Зураг нэмэх (дээд тал 4)</>
+                }
+                <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" disabled={uploadingImg} />
+              </label>
+            )}
+          </div>
+
+          <button type="submit" disabled={loading || uploadingImg} className="btn-primary text-sm disabled:opacity-50">
             {loading ? 'Нэмж байна...' : 'Сэтгэгдэл нэмэх'}
           </button>
         </form>
@@ -146,6 +197,16 @@ export default function ReviewsSection({ placeId, reviews, profile }: ReviewsSec
             </div>
             {r.title && <p className="font-semibold text-forest-800 text-sm mb-1">{r.title}</p>}
             {r.body  && <p className="text-forest-600 text-sm leading-relaxed">{r.body}</p>}
+            {r.images && r.images.length > 0 && (
+              <div className="flex gap-2 mt-3 flex-wrap">
+                {r.images.map((img: string, i: number) => (
+                  <a key={i} href={img} target="_blank" rel="noopener noreferrer"
+                    className="w-16 h-16 rounded-xl overflow-hidden block">
+                    <img src={img} alt="" className="w-full h-full object-cover hover:opacity-80 transition-opacity" />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         ))}
 

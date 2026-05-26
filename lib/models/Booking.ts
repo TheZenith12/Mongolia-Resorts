@@ -18,6 +18,8 @@ const BookingSchema = new Schema({
   payment_intent:    String,
   qpay_invoice_id:   String,
   notes:             String,
+  coupon_id:         String,
+  discount_amount:   { type: Number, default: 0 },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 export const Booking = models.Booking || model('Booking', BookingSchema);

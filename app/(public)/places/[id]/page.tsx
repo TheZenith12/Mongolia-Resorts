@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound, redirect, permanentRedirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -9,6 +9,9 @@ import { buildPlaceMetadata, buildPlaceSchema, buildBreadcrumbSchema } from '@/l
 import { getSimilarPlaces } from '@/lib/actions/places';
 import { isObjectId } from '@/lib/slug';
 import type { Place as PlaceType } from '@/lib/types';
+import { getSeasonInfo } from '@/lib/seasons';
+import SeasonInfoCard from '@/components/places/SeasonInfo';
+import WeatherWidget from '@/components/places/WeatherWidget';
 
 interface PlacePageProps {
   params: { id: string };
@@ -32,7 +35,15 @@ export async function generateMetadata({ params }: PlacePageProps): Promise<Meta
       created_at: (doc as any).created_at?.toISOString(),
       updated_at: (doc as any).updated_at?.toISOString(),
     };
-    return buildPlaceMetadata(p as PlaceType);
+    const meta = buildPlaceMetadata(p as PlaceType);
+    // ObjectId URL-ээр хандсан бол metadata-д canonical slug руу заана
+    if (isObjectId(params.id) && (doc as any).slug) {
+      return {
+        ...meta,
+        robots: { index: false, follow: true }, // ObjectId URL indexed болохгүй
+      };
+    }
+    return meta;
   } catch {
     return { title: 'Газар олдсонгүй' };
   }
@@ -44,10 +55,10 @@ export default async function PlacePage({ params }: PlacePageProps) {
   const doc = await findPlace(params.id);
   if (!doc) notFound();
 
-  // ObjectId-аар хандсан бол slug руу redirect хийнэ (canonical URL)
+  // ObjectId-аар хандсан бол slug руу 308 permanent redirect (SEO canonical)
   const p = doc as any;
   if (p.slug && isObjectId(params.id)) {
-    redirect(`/places/${p.slug}`);
+    permanentRedirect(`/places/${p.slug}`);
   }
 
   const reviews = await Review.find({ place_id: params.id }).sort({ created_at: -1 }).lean();
@@ -110,6 +121,7 @@ export default async function PlacePage({ params }: PlacePageProps) {
 
   const placeSchema       = buildPlaceSchema(place as PlaceType);
   const breadcrumbSchema  = buildBreadcrumbSchema(place as PlaceType);
+  const season            = getSeasonInfo((place as any).type, (place as any).province);
 
   return (
     <>
@@ -126,6 +138,7 @@ export default async function PlacePage({ params }: PlacePageProps) {
         initialLiked={likedIds.includes((place as any).id)}
         profile={profile}
         similarPlaces={similarPlaces}
+        season={season}
       />
     </>
   );

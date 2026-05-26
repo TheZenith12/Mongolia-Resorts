@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, MapPin, CalendarCheck, Users,
-  Star, Settings, LogOut, Leaf, ChevronRight, Building2, CalendarX, MessageCircle, Menu, X,
+  Star, Settings, LogOut, Leaf, ChevronRight, Building2, CalendarX, MessageCircle, Menu, X, Tag,
 } from 'lucide-react';
 import { cn, getInitials } from '@/lib/utils';
 import { signOut as nextAuthSignOut } from 'next-auth/react';
@@ -76,6 +76,7 @@ export default function AdminSidebar({
           label: 'Удирдлага',
           items: [
             { href: '/admin/chat',     icon: MessageCircle, label: 'Чат' },
+            { href: '/admin/coupons',  icon: Tag,           label: 'Купонууд' },
             { href: '/admin/users',    icon: Users,         label: 'Хэрэглэгчид' },
             { href: '/admin/settings', icon: Settings,      label: 'Тохиргоо' },
           ],

@@ -21,11 +21,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
     return [
-      { url: BASE_URL,                         lastModified: new Date(), changeFrequency: 'daily',  priority: 1.0 },
-      { url: `${BASE_URL}/places`,             lastModified: new Date(), changeFrequency: 'daily',  priority: 0.9 },
-      { url: `${BASE_URL}/places?type=resort`, lastModified: new Date(), changeFrequency: 'daily',  priority: 0.85 },
-      { url: `${BASE_URL}/places?type=nature`, lastModified: new Date(), changeFrequency: 'daily',  priority: 0.85 },
-      { url: `${BASE_URL}/map`,                lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
+      { url: BASE_URL,               lastModified: new Date(), changeFrequency: 'daily',  priority: 1.0 },
+      { url: `${BASE_URL}/places`,   lastModified: new Date(), changeFrequency: 'daily',  priority: 0.9 },
+      { url: `${BASE_URL}/map`,      lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
+      { url: `${BASE_URL}/places/submit`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
       ...placeUrls,
     ];
   } catch {

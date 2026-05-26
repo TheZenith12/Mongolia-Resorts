@@ -127,13 +127,13 @@ export function buildBreadcrumbSchema(place: Place) {
         '@type': 'ListItem',
         position: 2,
         name: place.type === 'resort' ? 'Амралтын газрууд' : 'Байгалийн газрууд',
-        item: `${BASE_URL}/places?type=${place.type}`,
+        item: `${BASE_URL}/places`,
       },
       {
         '@type': 'ListItem',
         position: 3,
         name: place.name,
-        item: `${BASE_URL}/places/${place.id}`,
+        item: `${BASE_URL}/places/${place.slug ?? place.id}`,
       },
     ],
   };
