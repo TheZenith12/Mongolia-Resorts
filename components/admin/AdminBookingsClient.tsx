@@ -21,15 +21,6 @@ const statusColors: Record<string, string> = {
 const statusLabels: Record<string, string> = {
   pending: 'Хүлээгдэж буй', confirmed: 'Батлагдсан', cancelled: 'Цуцлагдсан', completed: 'Дууссан',
 };
-const paymentColors: Record<string, string> = {
-  pending:  'bg-yellow-50 text-yellow-600',
-  paid:     'bg-green-50 text-green-600',
-  failed:   'bg-red-50 text-red-600',
-  refunded: 'bg-gray-50 text-gray-600',
-};
-const paymentLabels: Record<string, string> = {
-  pending: 'Хүлээгдэж буй', paid: 'Төлөгдсөн', failed: 'Амжилтгүй', refunded: 'Буцаагдсан',
-};
 
 function BookingStatusActions({ booking, onUpdate }: { booking: any; onUpdate: (id: string, status: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -129,9 +120,6 @@ export default function AdminBookingsClient({ bookings: initialBookings, current
                 <span className={`badge text-[10px] py-0 ${statusColors[b.status] ?? ''}`}>
                   {statusLabels[b.status] ?? b.status}
                 </span>
-                <span className={`badge text-[10px] py-0 ${paymentColors[b.payment_status] ?? ''}`}>
-                  {paymentLabels[b.payment_status] ?? b.payment_status}
-                </span>
               </div>
             </div>
           ))}
@@ -144,7 +132,7 @@ export default function AdminBookingsClient({ bookings: initialBookings, current
         <table className="hidden lg:table w-full">
           <thead>
             <tr className="border-b border-gray-100">
-              {['Зочин', 'Газар', 'Огноо', 'Дүн', 'Төлбөр', 'Статус', 'Үйлдэл', 'Чат'].map(h => (
+              {['Зочин', 'Газар', 'Огноо', 'Дүн', 'Статус', 'Үйлдэл', 'Чат'].map(h => (
                 <th key={h} className="text-left px-5 py-3.5 text-xs font-semibold text-forest-500 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
@@ -163,11 +151,6 @@ export default function AdminBookingsClient({ bookings: initialBookings, current
                 </td>
                 <td className="px-5 py-4 text-sm font-medium text-forest-700">
                   {formatPrice(b.total_amount)}
-                </td>
-                <td className="px-5 py-4">
-                  <span className={`badge text-xs ${paymentColors[b.payment_status] ?? ''}`}>
-                    {paymentLabels[b.payment_status] ?? b.payment_status}
-                  </span>
                 </td>
                 <td className="px-5 py-4">
                   <span className={`badge text-xs ${statusColors[b.status] ?? ''}`}>

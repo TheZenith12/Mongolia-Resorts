@@ -154,14 +154,6 @@ export default function BookingsListClient({ initialBookings }: Props) {
     if (status === 'completed') return tr('bstatus_completed');
     return status;
   }
-  function payLabel(status: string) {
-    if (status === 'paid')     return tr('pstatus_paid');
-    if (status === 'pending')  return tr('pstatus_pending');
-    if (status === 'refunded') return tr('pstatus_refunded');
-    if (status === 'failed')   return tr('pstatus_failed');
-    return status;
-  }
-
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     router.refresh();
@@ -280,33 +272,16 @@ export default function BookingsListClient({ initialBookings }: Props) {
                       </span>
                     </div>
 
-                    {/* Price + payment status */}
+                    {/* Price + actions */}
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-forest-900 text-base">
                           {formatPrice(booking.total_amount)}
                         </span>
-                        <span className={`badge text-[11px] ${
-                          booking.payment_status === 'paid'
-                            ? 'bg-green-50 text-green-700 border-green-200'
-                            : booking.payment_status === 'refunded'
-                            ? 'bg-purple-50 text-purple-700 border-purple-200'
-                            : 'bg-gray-50 text-gray-500 border-gray-200'
-                        }`}>
-                          {payLabel(booking.payment_status)}
-                        </span>
                       </div>
 
                       {/* Actions */}
                       <div className="flex items-center gap-3">
-                        {booking.payment_status === 'pending' && (
-                          <Link
-                            href={`/booking/${booking.id}/payment`}
-                            className="flex items-center gap-1.5 text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg transition-colors"
-                          >
-                            {tr('prof_pay_now')} <ArrowRight size={12} />
-                          </Link>
-                        )}
                         {booking.status === 'confirmed' && (
                           <Link
                             href={`/places`}

@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, Users, CreditCard, Smartphone, ArrowRight, Lock, Loader2, User, Phone, Tag, CheckCircle, X } from 'lucide-react';
+import { Calendar, Users, CreditCard, Smartphone, ArrowRight, Lock, Loader2, User, Phone } from 'lucide-react';
 import { formatPrice, calculateNights } from '@/lib/utils';
 import { createBooking, getBookedDateRanges } from '@/lib/actions/auth';
-import { validateCoupon } from '@/lib/actions/coupons';
 import { toast } from 'react-hot-toast';
 import { useLang } from '@/lib/lang-context';
 
@@ -43,41 +42,14 @@ export default function BookingPanel({ place, profile }: any) {
   const [bookedRanges, setBookedRanges] = useState<Array<{ check_in: string; check_out: string }>>([]);
   const [dateConflict, setDateConflict] = useState(false);
 
-  // Coupon
-  const [couponCode, setCouponCode]   = useState('');
-  const [couponResult, setCouponResult] = useState<any>(null);
-  const [couponLoading, setCouponLoading] = useState(false);
-
   const today  = new Date().toISOString().split('T')[0];
   const nights = checkIn && checkOut ? calculateNights(checkIn, checkOut) : 0;
   const price  = selectedRoom?.price_per_night ?? place.price_per_night ?? 0;
   const baseTotal = nights * price * (selectedRoom ? 1 : guests);
-  const discount  = couponResult?.valid ? couponResult.discount : 0;
-  const total     = Math.max(0, baseTotal - discount);
+  const total     = baseTotal;
 
   function hasConflict(cin: string, cout: string): boolean {
     return bookedRanges.some(r => cin < r.check_out && cout > r.check_in);
-  }
-
-  async function applyCoupon() {
-    if (!couponCode.trim()) return;
-    setCouponLoading(true);
-    try {
-      const res = await validateCoupon(couponCode.trim(), baseTotal, place.id);
-      setCouponResult(res);
-      if (res.valid) toast.success(res.message);
-      else toast.error(res.message);
-    } catch {
-      toast.error('Купон шалгахад алдаа гарлаа');
-    } finally {
-      setCouponLoading(false);
-    }
-  }
-
-
-  function removeCoupon() {
-    setCouponCode('');
-    setCouponResult(null);
   }
 
   useEffect(() => {
@@ -123,8 +95,6 @@ export default function BookingPanel({ place, profile }: any) {
         check_in:       checkIn,
         check_out:      checkOut,
         payment_method: payMethod,
-        coupon_id:      couponResult?.valid ? couponResult.couponId : undefined,
-        discount_amount: discount > 0 ? discount : undefined,
         notes:          undefined,
       });
       toast.success(tr('book_submit') + ' ✓');
@@ -308,41 +278,6 @@ export default function BookingPanel({ place, profile }: any) {
           </div>
         </div>
 
-        {/* Coupon */}
-        <div>
-          <label className="text-xs font-medium text-forest-500 mb-1.5 flex items-center gap-1.5">
-            <Tag size={12} /> {tr('book_coupon')}
-          </label>
-          {couponResult?.valid ? (
-            <div className="flex items-center justify-between p-2.5 bg-green-50 border border-green-200 rounded-xl text-sm">
-              <div className="flex items-center gap-2 text-green-700">
-                <CheckCircle size={14} />
-                <span className="font-medium">{couponResult.code}</span>
-                <span className="text-green-600">−{formatPrice(couponResult.discount)}</span>
-              </div>
-              <button onClick={removeCoupon} className="text-green-500 hover:text-green-700">
-                <X size={14} />
-              </button>
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <input
-                value={couponCode}
-                onChange={e => setCouponCode(e.target.value.toUpperCase())}
-                onKeyDown={e => e.key === 'Enter' && applyCoupon()}
-                placeholder="SUMMER2025"
-                className="input-field py-2 text-sm flex-1 uppercase"
-              />
-              <button
-                onClick={applyCoupon}
-                disabled={couponLoading || !couponCode.trim()}
-                className="px-3 py-2 bg-forest-700 text-white rounded-xl text-xs font-medium disabled:opacity-50"
-              >
-                {couponLoading ? <Loader2 size={13} className="animate-spin" /> : tr('book_coupon_apply')}
-              </button>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Price summary */}
@@ -357,12 +292,6 @@ export default function BookingPanel({ place, profile }: any) {
             <span>{formatPrice(price)} × {nights} {tr('book_nights')}</span>
             <span>{formatPrice(baseTotal)}</span>
           </div>
-          {discount > 0 && (
-            <div className="flex justify-between text-green-600">
-              <span>{tr('book_discount')}</span>
-              <span>−{formatPrice(discount)}</span>
-            </div>
-          )}
           <div className="flex justify-between font-semibold text-forest-900 pt-1.5 border-t border-forest-200">
             <span>{tr('book_total')}</span>
             <span>{formatPrice(total)}</span>
