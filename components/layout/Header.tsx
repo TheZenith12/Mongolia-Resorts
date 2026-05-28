@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X, MapPin, Eye, Building2, Leaf, Heart, LogOut, ChevronDown } from 'lucide-react';
+import HeaderChatButton from '@/components/layout/HeaderChatButton';
 import { signOut as nextAuthSignOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import type { SiteStats, Profile } from '@/lib/types';
@@ -158,6 +159,9 @@ export default function Header({ stats, profile }: HeaderProps) {
               </div>
             )}
 
+            {profile && !['super_admin', 'manager'].includes(profile.role) && (
+              <HeaderChatButton userId={(profile as any).id} />
+            )}
             <LangToggle />
             <DarkModeToggle />
 
