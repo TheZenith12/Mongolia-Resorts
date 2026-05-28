@@ -175,9 +175,19 @@ export default function AuthPage({ mode = "login" }: { mode?: Mode }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-forest-700 mb-1.5">
-                Нууц үг
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium text-forest-700">
+                  Нууц үг
+                </label>
+                {mode === "login" && (
+                  <Link
+                    href="/auth/forgot-password"
+                    className="text-xs text-forest-500 hover:text-forest-700 transition-colors"
+                  >
+                    Нууц үг мартсан?
+                  </Link>
+                )}
+              </div>
               <div className="relative">
                 <Lock
                   size={16}

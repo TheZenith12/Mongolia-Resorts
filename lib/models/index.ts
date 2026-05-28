@@ -11,3 +11,4 @@ export { ManagerAssignment } from './ManagerAssignment';
 export { Conversation } from './Conversation';
 export { ChatMessage } from './ChatMessage';
 export { Coupon } from './Coupon';
+export { PasswordResetToken } from './PasswordResetToken';

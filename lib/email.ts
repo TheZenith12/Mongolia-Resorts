@@ -101,6 +101,37 @@ export async function sendPlaceApproved(opts: {
   `);
 }
 
+// ── Нууц үг сэргээх ─────────────────────────────────────────────────────────
+export async function sendPasswordReset(opts: {
+  to: string;
+  resetUrl: string;
+}) {
+  await send(opts.to, 'Нууц үг сэргээх — Монгол Нутаг', `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;">
+      <div style="background:#1a3a2a;padding:20px 24px;border-radius:12px;margin-bottom:24px;">
+        <h1 style="color:#fbbf24;margin:0;font-size:22px;">Монгол Нутаг</h1>
+      </div>
+      <h2 style="color:#1a3a2a;margin-bottom:8px;">Нууц үг сэргээх</h2>
+      <p style="color:#4b6a57;margin-bottom:24px;">
+        Та нууц үгээ сэргээх хүсэлт илгээсэн байна. Доорх товчийг дарж шинэ нууц үг тохируулна уу.
+      </p>
+      <a href="${opts.resetUrl}"
+         style="display:inline-block;background:#1a3a2a;color:white;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:16px;margin-bottom:24px;">
+        Нууц үг сэргээх
+      </a>
+      <p style="color:#9ca3af;font-size:13px;">
+        Энэ холбоос <strong>1 цаг</strong>-ийн дараа хүчингүй болно.
+      </p>
+      <p style="color:#9ca3af;font-size:13px;">
+        Хэрэв та энэ хүсэлтийг илгээгээгүй бол энэ имэйлийг үл тоомсорлоно уу.
+      </p>
+      <p style="color:#d1d5db;font-size:11px;margin-top:32px;border-top:1px solid #e5e7eb;padding-top:16px;">
+        Монгол Нутаг — Автомат имэйл
+      </p>
+    </div>
+  `);
+}
+
 // ── Газар татгалзсан ─────────────────────────────────────────────────────────
 export async function sendPlaceRejected(opts: {
   to: string;
