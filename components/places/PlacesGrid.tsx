@@ -8,6 +8,7 @@ import { toggleLike } from '@/lib/actions/auth';
 import { toast } from 'react-hot-toast';
 import type { Place } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useLang } from '@/lib/lang-context';
 
 interface PlacesGridProps {
   places: Place[];
@@ -18,6 +19,7 @@ interface PlacesGridProps {
 
 export default function PlacesGrid({ places, likedIds, pagination, searchParams }: PlacesGridProps) {
   const router = useRouter();
+  const { tr } = useLang();
   const [liked, setLiked] = useState<Set<string>>(new Set(likedIds));
   // Optimistic like_count: place.id -> current count
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>(
@@ -49,7 +51,7 @@ export default function PlacesGrid({ places, likedIds, pagination, searchParams 
         if (result) next.add(placeId); else next.delete(placeId);
         return next;
       });
-      toast.success(result ? '❤️ Хадгаллаа' : 'Хадгалалтаас хасагдлаа');
+      toast.success(result ? tr('liked_saved') : tr('liked_removed'));
     } catch {
       // Rollback on error
       setLiked((prev) => {
@@ -61,7 +63,7 @@ export default function PlacesGrid({ places, likedIds, pagination, searchParams 
         ...prev,
         [placeId]: Math.max(0, (prev[placeId] ?? 0) + (wasLiked ? 1 : -1)),
       }));
-      toast.error('Нэвтрэх шаардлагатай');
+      toast.error(tr('nav_login'));
       router.push('/auth/login');
     } finally {
       setLoadingId(null);
@@ -73,10 +75,10 @@ export default function PlacesGrid({ places, likedIds, pagination, searchParams 
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <SearchX size={48} className="text-forest-200 mb-4" />
         <h3 className="font-display text-2xl font-semibold text-forest-700 mb-2">
-          Газар олдсонгүй
+          {tr('places_not_found')}
         </h3>
         <p className="text-forest-500 text-sm">
-          Хайлтын нөхцөлийг өөрчлөөд дахин оролдоно уу
+          {tr('places_no_result')}
         </p>
       </div>
     );

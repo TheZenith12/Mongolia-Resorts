@@ -1,7 +1,7 @@
 import { getPlaces } from '@/lib/actions/places';
 import { getUserLikes } from '@/lib/actions/auth';
 import PlacesGrid from '@/components/places/PlacesGrid';
-import SortSelect from '@/components/places/SortSelect';
+import PlacesSectionHeader from '@/components/places/PlacesSectionHeader';
 
 interface PlacesSectionProps {
   searchParams: {
@@ -60,19 +60,11 @@ export default async function PlacesSection({ searchParams }: PlacesSectionProps
 
   return (
     <section>
-      <div className="flex items-end justify-between mb-8">
-        <div>
-          <h2 className="section-title">
-            {searchParams.type === 'resort' ? '🏕 Амралтын газрууд' :
-             searchParams.type === 'nature' ? '🌿 Байгалийн газрууд' :
-             'Бүх газрууд'}
-          </h2>
-          <p className="text-forest-500 mt-1.5 font-body text-sm">
-            {result.count} газар олдлоо
-          </p>
-        </div>
-        <SortSelect current={searchParams.sort} />
-      </div>
+      <PlacesSectionHeader
+        type={searchParams.type}
+        count={result.count}
+        currentSort={searchParams.sort}
+      />
 
       <PlacesGrid
         places={result.data}

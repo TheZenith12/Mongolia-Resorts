@@ -1,13 +1,17 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import PlaceCard from '@/components/places/PlaceCard';
 import type { Place } from '@/lib/types';
+import { useLang } from '@/lib/lang-context';
 
 interface FeaturedSectionProps {
   places: Place[];
 }
 
 export default function FeaturedSection({ places }: FeaturedSectionProps) {
+  const { tr } = useLang();
   if (!places.length) return null;
 
   return (
@@ -17,16 +21,16 @@ export default function FeaturedSection({ places }: FeaturedSectionProps) {
           <div className="flex items-center gap-2 mb-2">
             <Sparkles size={16} className="text-amber-500" />
             <span className="text-amber-600 text-sm font-medium font-body tracking-wide uppercase">
-              Онцлох газрууд
+              {tr('featured_badge')}
             </span>
           </div>
-          <h2 className="section-title">Хамгийн их сонирхолтой</h2>
+          <h2 className="section-title">{tr('featured_title')}</h2>
           <p className="text-forest-500 mt-2 font-body">
-            Хэрэглэгчдийн хамгийн өндөр үнэлгээ авсан газрууд
+            {tr('featured_sub')}
           </p>
         </div>
         <Link href="/places" className="btn-secondary hidden sm:flex items-center gap-2 text-sm">
-          Бүгдийг үзэх <ArrowRight size={14} />
+          {tr('featured_view_all')} <ArrowRight size={14} />
         </Link>
       </div>
 
@@ -44,7 +48,7 @@ export default function FeaturedSection({ places }: FeaturedSectionProps) {
 
       <div className="flex justify-center mt-8 sm:hidden">
         <Link href="/places" className="btn-secondary">
-          Бүгдийг үзэх <ArrowRight size={14} />
+          {tr('featured_view_all')} <ArrowRight size={14} />
         </Link>
       </div>
     </section>

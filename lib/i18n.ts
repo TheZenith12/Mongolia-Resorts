@@ -112,6 +112,30 @@ export const t = {
     season_good:    'Боломжтой',
     season_avoid:   'Хаалттай / хүйтэн',
 
+    // ── Featured Section ───────────────────────────────────────────────────────
+    featured_badge:    'Онцлох газрууд',
+    featured_title:    'Хамгийн их сонирхолтой',
+    featured_sub:      'Хэрэглэгчдийн хамгийн өндөр үнэлгээ авсан газрууд',
+    featured_view_all: 'Бүгдийг үзэх',
+
+    // ── Places Section ─────────────────────────────────────────────────────────
+    places_all:       'Бүх газрууд',
+    places_resorts:   '🏕 Амралтын газрууд',
+    places_nature:    '🌿 Байгалийн газрууд',
+    places_found:     'газар олдлоо',
+    places_not_found: 'Газар олдсонгүй',
+    places_no_result: 'Хайлтын нөхцөлийг өөрчлөөд дахин оролдоно уу',
+
+    // ── Sort ───────────────────────────────────────────────────────────────────
+    sort_newest:  'Шинэ эхэнд',
+    sort_rating:  'Үнэлгээгээр',
+    sort_views:   'Үзэлтээр',
+    sort_price:   'Үнээр',
+
+    // ── Like ───────────────────────────────────────────────────────────────────
+    liked_saved:   '❤️ Хадгаллаа',
+    liked_removed: 'Хадгалалтаас хасагдлаа',
+
     // ── Submit Place ───────────────────────────────────────────────────────────
     submit_title:   'Газар нэмэх',
     submit_desc:    'Та мэддэг байгалийн үзэсгэлэнт газар, амралтын газраа нэмж, бусдад танилцуулаарай.',
@@ -244,6 +268,30 @@ export const t = {
     season_best:    'Best season',
     season_good:    'Good',
     season_avoid:   'Off-season',
+
+    // ── Featured Section ───────────────────────────────────────────────────────
+    featured_badge:    'Featured Places',
+    featured_title:    'Most Popular',
+    featured_sub:      'Top-rated places by our community',
+    featured_view_all: 'View all',
+
+    // ── Places Section ─────────────────────────────────────────────────────────
+    places_all:       'All Places',
+    places_resorts:   '🏕 Resorts',
+    places_nature:    '🌿 Nature Spots',
+    places_found:     'places found',
+    places_not_found: 'No places found',
+    places_no_result: 'Try adjusting your filters or search terms',
+
+    // ── Sort ───────────────────────────────────────────────────────────────────
+    sort_newest:  'Newest first',
+    sort_rating:  'By rating',
+    sort_views:   'By views',
+    sort_price:   'By price',
+
+    // ── Like ───────────────────────────────────────────────────────────────────
+    liked_saved:   '❤️ Saved',
+    liked_removed: 'Removed from favorites',
 
     // ── Submit Place ───────────────────────────────────────────────────────────
     submit_title:   'Add a Place',
