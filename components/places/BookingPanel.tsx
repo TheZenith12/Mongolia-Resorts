@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, Users, CreditCard, Smartphone, ArrowRight, Lock, Loader2, User, Phone } from 'lucide-react';
+import { Calendar, Users, CreditCard, Smartphone, ArrowRight, Lock, Loader2, User, Phone, Copy, Check, Building2 } from 'lucide-react';
 import { formatPrice, calculateNights } from '@/lib/utils';
 import { createBooking, getBookedDateRanges } from '@/lib/actions/auth';
 import { toast } from 'react-hot-toast';
@@ -32,7 +32,15 @@ export default function BookingPanel({ place, profile }: any) {
   const [checkIn, setCheckIn]   = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [guests, setGuests]     = useState(1);
-  const [payMethod, setPayMethod] = useState<'stripe' | 'qpay'>('qpay');
+  const [payMethod, setPayMethod] = useState<'bank' | 'qpay'>('qpay');
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  function copyToClipboard(text: string, field: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 1500);
+    });
+  }
   const [loading, setLoading]   = useState(false);
 
   // Зочны мэдээлэл — profile-аас авч, засах боломжтой
@@ -263,8 +271,8 @@ export default function BookingPanel({ place, profile }: any) {
           <label className="text-xs font-medium text-forest-500 mb-2 block">{tr('book_payment')}</label>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { value: 'qpay',   label: 'QPay',  icon: <Smartphone size={14} /> },
-              { value: 'stripe', label: 'Карт',  icon: <CreditCard size={14} /> },
+              { value: 'qpay', label: 'QPay',              icon: <Smartphone size={14} /> },
+              { value: 'bank', label: tr('book_bank'),      icon: <Building2 size={14} /> },
             ].map(pm => (
               <button key={pm.value} type="button" onClick={() => setPayMethod(pm.value as any)}
                 className={`flex items-center justify-center gap-1.5 py-2 rounded-xl border text-sm font-medium transition-all ${
@@ -277,6 +285,72 @@ export default function BookingPanel({ place, profile }: any) {
             ))}
           </div>
         </div>
+
+        {/* Bank details — shown when bank transfer selected */}
+        {payMethod === 'bank' && (place.bank_account_number || place.bank_name) && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5">
+            <div className="flex items-center gap-1.5 text-blue-700 font-semibold text-xs mb-2.5">
+              <Building2 size={13} /> {tr('book_bank_details')}
+            </div>
+            <div className="space-y-1.5 text-sm">
+              {place.bank_name && (
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-600 text-xs">{tr('book_bank_name')}</span>
+                  <span className="font-semibold text-blue-900 text-xs">{place.bank_name}</span>
+                </div>
+              )}
+              {place.bank_account_number && (
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-600 text-xs">{tr('book_bank_account')}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="font-mono font-bold text-blue-900 tracking-wide text-sm">{place.bank_account_number}</span>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(place.bank_account_number, 'account')}
+                      className="p-0.5 text-blue-400 hover:text-blue-700 transition-colors"
+                    >
+                      {copiedField === 'account' ? <Check size={12} className="text-green-600" /> : <Copy size={12} />}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {place.bank_account_name && (
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-600 text-xs">{tr('book_bank_holder')}</span>
+                  <span className="font-semibold text-blue-900 text-xs">{place.bank_account_name}</span>
+                </div>
+              )}
+              {place.bank_phone && (
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-600 text-xs">{tr('book_bank_phone')}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="font-semibold text-blue-900 text-xs">{place.bank_phone}</span>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(place.bank_phone, 'phone')}
+                      className="p-0.5 text-blue-400 hover:text-blue-700 transition-colors"
+                    >
+                      {copiedField === 'phone' ? <Check size={12} className="text-green-600" /> : <Copy size={12} />}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            <p className="text-[10px] text-blue-500 mt-2.5 leading-relaxed">
+              {tr('book_bank_note')}
+            </p>
+          </div>
+        )}
+
+        {/* QPay info */}
+        {payMethod === 'qpay' && place.qpay_merchant_code && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-2.5">
+            <Smartphone size={15} className="text-green-600 flex-shrink-0" />
+            <div className="text-xs text-green-700">
+              <span className="font-semibold">QPay: </span>{place.qpay_merchant_code}
+            </div>
+          </div>
+        )}
 
       </div>
 

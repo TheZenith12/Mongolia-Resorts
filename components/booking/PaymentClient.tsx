@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   CreditCard, Smartphone, Shield, CheckCircle, ArrowLeft,
-  Calendar, Users,
+  Calendar, Users, Building2, Copy, Check,
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
@@ -29,7 +29,15 @@ const MOCK_BANK_URLS = [
 export default function PaymentClient({ booking, profile }: PaymentClientProps) {
   const router = useRouter();
   const { tr } = useLang();
-  const [method] = useState<'stripe' | 'qpay'>(booking.payment_method ?? 'qpay');
+  const [method] = useState<'stripe' | 'qpay' | 'bank'>(booking.payment_method ?? 'qpay');
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  function copyField(text: string, field: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 1500);
+    });
+  }
   const [step, setStep] = useState<'review' | 'processing' | 'qpay_scan'>('review');
   const [qpayData, setQpayData] = useState<any>(null);
 
@@ -158,6 +166,64 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
                         className="btn-primary w-full py-4"
                       >
                         {loading ? tr('pay_processing') : tr('pay_qpay_btn')}
+                      </button>
+                    </div>
+                  ) : method === 'bank' ? (
+                    <div>
+                      {/* Bank transfer */}
+                      <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100 mb-5">
+                        <Building2 size={22} className="text-blue-600 flex-shrink-0" />
+                        <div>
+                          <div className="font-semibold text-blue-800 text-sm">{tr('book_bank_details')}</div>
+                          <div className="text-blue-600 text-xs mt-0.5">{tr('book_bank_note')}</div>
+                        </div>
+                      </div>
+
+                      {(booking.place?.bank_name || booking.place?.bank_account_number) ? (
+                        <div className="bg-white border border-blue-200 rounded-xl overflow-hidden mb-5">
+                          {[
+                            { label: tr('book_bank_name'),    value: booking.place?.bank_name,           field: 'bank' },
+                            { label: tr('book_bank_account'), value: booking.place?.bank_account_number, field: 'account', mono: true },
+                            { label: tr('book_bank_holder'),  value: booking.place?.bank_account_name,   field: 'holder' },
+                            { label: tr('book_bank_phone'),   value: booking.place?.bank_phone,          field: 'phone' },
+                          ].filter(r => r.value).map((row, i, arr) => (
+                            <div key={row.field} className={`flex items-center justify-between px-4 py-3 ${i < arr.length - 1 ? 'border-b border-blue-100' : ''}`}>
+                              <span className="text-blue-600 text-sm">{row.label}</span>
+                              <div className="flex items-center gap-2">
+                                <span className={`font-semibold text-forest-900 text-sm ${(row as any).mono ? 'font-mono tracking-wide' : ''}`}>
+                                  {row.value}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => copyField(row.value!, row.field)}
+                                  className="p-1 text-blue-300 hover:text-blue-600 transition-colors"
+                                >
+                                  {copiedField === row.field
+                                    ? <Check size={13} className="text-green-600" />
+                                    : <Copy size={13} />}
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700 mb-5">
+                          Банкны дансны мэдээлэл одоогоор оруулаагүй байна. Газартай холбогдоно уу.
+                        </div>
+                      )}
+
+                      {/* Amount highlight */}
+                      <div className="flex items-center justify-between p-4 bg-forest-50 rounded-xl mb-5">
+                        <span className="text-sm text-forest-600">{tr('pay_total')}</span>
+                        <span className="font-bold text-xl text-amber-600">{formatPrice(booking.total_amount)}</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/booking/${booking.id}/confirmation`)}
+                        className="btn-primary w-full py-4"
+                      >
+                        {tr('pay_check')} <CheckCircle size={16} />
                       </button>
                     </div>
                   ) : (

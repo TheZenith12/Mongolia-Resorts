@@ -75,6 +75,13 @@ export const t = {
     book_conflict:  '⚠️ Сонгосон огноонд аль хэдийн захиалга байна.',
     book_login:     'Захиалахын тулд нэвтрэх шаардлагатай',
     book_nights:    'шөнө',
+    book_bank:      'Банкны шилжүүлэг',
+    book_bank_details: 'Банкны данс',
+    book_bank_name: 'Банк',
+    book_bank_account: 'Дансны дугаар',
+    book_bank_holder: 'Эзэмшигч',
+    book_bank_phone: 'Утас',
+    book_bank_note: 'Захиалга хийснийхээ дараа дээрх дансанд шилжүүлнэ үү. Гүйлгээний утгад захиалгын дугаараа бичнэ үү.',
 
     // ── Reviews ────────────────────────────────────────────────────────────────
     reviews_title:  'Үнэлгээ & Сэтгэгдэл',
@@ -301,6 +308,13 @@ export const t = {
     book_conflict:  '⚠️ This date is already booked. Please choose another date.',
     book_login:     'Please sign in to make a booking',
     book_nights:    'nights',
+    book_bank:      'Bank Transfer',
+    book_bank_details: 'Bank Account',
+    book_bank_name: 'Bank',
+    book_bank_account: 'Account No.',
+    book_bank_holder: 'Account Name',
+    book_bank_phone: 'Phone',
+    book_bank_note: 'After booking, please transfer to the above account. Include your booking number in the transfer description.',
 
     // ── Reviews ────────────────────────────────────────────────────────────────
     reviews_title:  'Ratings & Reviews',

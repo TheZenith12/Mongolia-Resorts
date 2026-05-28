@@ -13,7 +13,7 @@ const BookingSchema = new Schema({
   nights:            { type: Number, default: 1 },
   total_amount:      { type: Number, required: true },
   status:            { type: String, enum: ['pending', 'confirmed', 'cancelled', 'completed'], default: 'pending' },
-  payment_method:    { type: String, enum: ['stripe', 'qpay'] },
+  payment_method:    { type: String, enum: ['stripe', 'qpay', 'bank'] },
   payment_status:    { type: String, enum: ['pending', 'paid', 'failed', 'refunded'], default: 'pending' },
   payment_intent:    String,
   qpay_invoice_id:   String,

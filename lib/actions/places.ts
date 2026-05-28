@@ -452,3 +452,56 @@ export async function reviewPlace(id: string, action: 'approve' | 'reject', reas
   revalidatePath('/admin/places');
   revalidatePath(`/places/${id}`);
 }
+
+// ── Төлбөрийн тохиргоо ─────────────────────────────────────────────────────────
+
+export interface PlacePaymentSettings {
+  qpay_merchant_code:  string;
+  bank_name:           string;
+  bank_account_number: string;
+  bank_account_name:   string;
+  bank_phone:          string;
+}
+
+export async function getPlacePaymentSettings(placeId: string): Promise<PlacePaymentSettings> {
+  await connectDB();
+  const place = await Place.findById(placeId)
+    .select('qpay_merchant_code bank_name bank_account_number bank_account_name bank_phone')
+    .lean() as any;
+  return {
+    qpay_merchant_code:  place?.qpay_merchant_code  ?? '',
+    bank_name:           place?.bank_name           ?? '',
+    bank_account_number: place?.bank_account_number ?? '',
+    bank_account_name:   place?.bank_account_name   ?? '',
+    bank_phone:          place?.bank_phone          ?? '',
+  };
+}
+
+export async function updatePlacePaymentSettings(
+  placeId: string,
+  data: PlacePaymentSettings,
+): Promise<void> {
+  const { role, user } = await getAuthContext();
+  await connectDB();
+
+  // Manager зөвхөн өөрийн оноогдсон газрынхаа тохиргоог засна
+  if (role === 'manager') {
+    const assignment = await ManagerAssignment.findOne({ manager_id: user.id }).lean() as any;
+    if (!assignment || assignment.place_id?.toString() !== placeId) {
+      throw new Error('Энэ газрын тохиргоог засах эрх байхгүй');
+    }
+  } else if (role !== 'super_admin') {
+    throw new Error('Эрх хүрэлцэхгүй');
+  }
+
+  await Place.findByIdAndUpdate(placeId, {
+    qpay_merchant_code:  data.qpay_merchant_code  ?? '',
+    bank_name:           data.bank_name           ?? '',
+    bank_account_number: data.bank_account_number ?? '',
+    bank_account_name:   data.bank_account_name   ?? '',
+    bank_phone:          data.bank_phone          ?? '',
+  });
+
+  revalidatePath(`/places/${placeId}`);
+  revalidatePath('/admin/payment');
+}

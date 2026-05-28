@@ -26,6 +26,12 @@ const PlaceSchema = new Schema({
   like_count:      { type: Number, default: 0 },
   manager_id:      String,
   created_by:      String,
+  // Төлбөрийн тохиргоо
+  qpay_merchant_code:   String,
+  bank_name:            String,
+  bank_account_number:  String,
+  bank_account_name:    String,
+  bank_phone:           String,
   // Хэрэглэгчийн илгээсэн газар
   status:              { type: String, enum: ['approved', 'pending', 'rejected'], default: 'approved' },
   submitted_by:        String,   // user_id

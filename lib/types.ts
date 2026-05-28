@@ -6,7 +6,7 @@ export type PlaceType = 'resort' | 'nature';
 export type UserRole = 'user' | 'manager' | 'super_admin';
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
-export type PaymentMethod = 'stripe' | 'qpay';
+export type PaymentMethod = 'stripe' | 'qpay' | 'bank';
 
 // =====================================================
 // Database Types
