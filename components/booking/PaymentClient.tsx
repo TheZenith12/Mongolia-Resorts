@@ -5,11 +5,12 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   CreditCard, Smartphone, Shield, CheckCircle, ArrowLeft,
-  Calendar, Users, MapPin,
+  Calendar, Users,
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
 import type { Booking, Profile } from '@/lib/types';
+import { useLang } from '@/lib/lang-context';
 
 interface PaymentClientProps {
   booking: Booking & { place: any };
@@ -27,11 +28,11 @@ const MOCK_BANK_URLS = [
 
 export default function PaymentClient({ booking, profile }: PaymentClientProps) {
   const router = useRouter();
+  const { tr } = useLang();
   const [method] = useState<'stripe' | 'qpay'>(booking.payment_method ?? 'qpay');
   const [step, setStep] = useState<'review' | 'processing' | 'qpay_scan'>('review');
   const [qpayData, setQpayData] = useState<any>(null);
 
-  // Card form state (Stripe)
   const [cardNum, setCardNum] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvc, setCvc] = useState('');
@@ -41,18 +42,15 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
   async function handleQPayPayment() {
     setLoading(true);
     try {
-      // Try real API first, fall back to demo mode if credentials missing
       const res = await fetch('/api/payment/qpay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ booking_id: booking.id }),
       });
       const data = await res.json();
-
       if (res.ok && data.qr_image) {
         setQpayData(data);
       } else {
-        // Demo mode — generate a real-looking QR with booking info
         const qrContent = `QPay|${booking.id}|${booking.total_amount}|MongolNutar`;
         setQpayData({
           invoice_id: `DEMO-${booking.id.slice(0, 8).toUpperCase()}`,
@@ -64,7 +62,6 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
       }
       setStep('qpay_scan');
     } catch {
-      // Network error — still show demo QR
       const qrContent = `QPay|${booking.id}|${booking.total_amount}|MongolNutar`;
       setQpayData({
         invoice_id: `DEMO-${booking.id.slice(0, 8).toUpperCase()}`,
@@ -91,10 +88,9 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      // Redirect to Stripe checkout
       window.location.href = data.checkout_url;
     } catch (err: any) {
-      toast.error(err.message ?? 'Карт алдаа гарлаа');
+      toast.error(err.message ?? 'Error');
       setStep('review');
     } finally {
       setLoading(false);
@@ -103,9 +99,8 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
 
   async function checkQPayStatus() {
     if (!qpayData) return;
-    // Demo mode — go straight to confirmation
     if (qpayData.demo) {
-      toast.success('Төлбөр амжилттай!');
+      toast.success(tr('pay_paid') + ' ✓');
       router.push(`/booking/${booking.id}/confirmation`);
       return;
     }
@@ -113,7 +108,7 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
       const res = await fetch(`/api/payment/qpay/check?invoice_id=${qpayData.invoice_id}&booking_id=${booking.id}`);
       const data = await res.json();
       if (data.paid) {
-        toast.success('Төлбөр амжилттай!');
+        toast.success(tr('pay_paid') + ' ✓');
         router.push(`/booking/${booking.id}/confirmation`);
       } else {
         toast.error('Төлбөр хийгдээгүй байна. Дахин шалгана уу.');
@@ -123,19 +118,25 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
     }
   }
 
+  const nights = booking.nights ?? 1;
 
   return (
     <div className="min-h-screen bg-cream py-10">
       <div className="page-container max-w-4xl">
-        <button onClick={() => router.back()} className="flex items-center gap-2 text-forest-500 text-sm mb-6 hover:text-forest-700 transition-colors">
-          <ArrowLeft size={16} /> Буцах
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-forest-500 text-sm mb-6 hover:text-forest-700 transition-colors"
+        >
+          <ArrowLeft size={16} /> {tr('pay_back')}
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Left: Payment form */}
           <div className="lg:col-span-3">
             <div className="card p-6">
-              <h1 className="font-display text-2xl font-semibold text-forest-900 mb-6">Төлбөр хийх</h1>
+              <h1 className="font-display text-2xl font-semibold text-forest-900 mb-6">
+                {tr('pay_title')}
+              </h1>
 
               {step === 'review' && (
                 <>
@@ -144,24 +145,19 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
                       <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100 mb-6">
                         <Smartphone size={22} className="text-blue-600" />
                         <div>
-                          <div className="font-semibold text-blue-800 text-sm">QPay төлбөр</div>
-                          <div className="text-blue-600 text-xs mt-0.5">
-                            Монголын банкны аппликейшнээр төлнө
-                          </div>
+                          <div className="font-semibold text-blue-800 text-sm">{tr('pay_qpay_label')}</div>
+                          <div className="text-blue-600 text-xs mt-0.5">{tr('pay_qpay_sub')}</div>
                         </div>
                       </div>
-
                       <p className="text-forest-600 text-sm mb-6 leading-relaxed">
-                        Дараах товч дарахад QPay QR код үүснэ. Та өөрийн банкны аппликейшнийг нээж
-                        QR кодыг уншуулан төлбөрөө хийнэ үү.
+                        {tr('pay_qpay_desc')}
                       </p>
-
                       <button
                         onClick={handleQPayPayment}
                         disabled={loading}
                         className="btn-primary w-full py-4"
                       >
-                        {loading ? 'Боловсруулж байна...' : '📱 QPay QR Код Үүсгэх'}
+                        {loading ? tr('pay_processing') : tr('pay_qpay_btn')}
                       </button>
                     </div>
                   ) : (
@@ -169,14 +165,13 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
                       <div className="flex items-center gap-3 p-4 bg-purple-50 rounded-xl border border-purple-100 mb-6">
                         <CreditCard size={22} className="text-purple-600" />
                         <div>
-                          <div className="font-semibold text-purple-800 text-sm">Карттай төлбөр</div>
+                          <div className="font-semibold text-purple-800 text-sm">{tr('pay_card_label')}</div>
                           <div className="text-purple-600 text-xs">Visa / Mastercard / American Express</div>
                         </div>
                       </div>
-
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm font-medium text-forest-700 mb-1.5">Картын дугаар</label>
+                          <label className="block text-sm font-medium text-forest-700 mb-1.5">{tr('pay_card_num')}</label>
                           <input
                             value={cardNum}
                             onChange={(e) => setCardNum(e.target.value.replace(/\D/g, '').slice(0, 16)
@@ -188,18 +183,18 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-forest-700 mb-1.5">Эзэмшигчийн нэр</label>
+                          <label className="block text-sm font-medium text-forest-700 mb-1.5">{tr('pay_card_name')}</label>
                           <input
                             value={cardName}
                             onChange={(e) => setCardName(e.target.value)}
-                            placeholder="БАТБОЛД Б"
+                            placeholder="BATBOLD B"
                             className="input-field uppercase"
                             required
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-sm font-medium text-forest-700 mb-1.5">Хүчинтэй хугацаа</label>
+                            <label className="block text-sm font-medium text-forest-700 mb-1.5">{tr('pay_card_expiry')}</label>
                             <input
                               value={expiry}
                               onChange={(e) => {
@@ -226,9 +221,8 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
                           </div>
                         </div>
                       </div>
-
                       <button type="submit" disabled={loading} className="btn-primary w-full py-4 mt-6">
-                        {loading ? 'Боловсруулж байна...' : `💳 ${formatPrice(booking.total_amount)} Төлөх`}
+                        {loading ? tr('pay_processing') : `💳 ${formatPrice(booking.total_amount)}`}
                       </button>
                     </form>
                   )}
@@ -238,14 +232,13 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
               {step === 'processing' && (
                 <div className="flex flex-col items-center justify-center py-12">
                   <div className="w-16 h-16 border-4 border-forest-200 border-t-forest-600 rounded-full animate-spin mb-4" />
-                  <p className="text-forest-700 font-medium">Төлбөр боловсруулж байна...</p>
-                  <p className="text-forest-400 text-sm mt-1">Хуудсыг хаахгүй байна уу</p>
+                  <p className="text-forest-700 font-medium">{tr('pay_processing')}</p>
+                  <p className="text-forest-400 text-sm mt-1">{tr('pay_do_not_close')}</p>
                 </div>
               )}
 
               {step === 'qpay_scan' && qpayData && (
                 <div className="flex flex-col items-center">
-                  {/* QPay header */}
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
                       <Smartphone size={14} className="text-white" />
@@ -256,21 +249,15 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
                     )}
                   </div>
 
-                  {/* QR code */}
                   <div className="bg-white border-4 border-forest-100 rounded-2xl p-3 mb-4 shadow-sm">
                     {qpayData.qr_image ? (
-                      <img
-                        src={`data:image/png;base64,${qpayData.qr_image}`}
-                        alt="QPay QR Code"
-                        className="w-52 h-52"
-                      />
+                      <img src={`data:image/png;base64,${qpayData.qr_image}`} alt="QPay QR" className="w-52 h-52" />
                     ) : (
                       <img
                         src={qpayData.qr_url}
-                        alt="QPay QR Code"
+                        alt="QPay QR"
                         className="w-52 h-52"
                         onError={(e) => {
-                          // fallback static QR if network fails
                           (e.target as HTMLImageElement).src =
                             `https://api.qrserver.com/v1/create-qr-code/?size=208x208&data=${encodeURIComponent('QPay:MongolNutar')}&margin=10`;
                         }}
@@ -279,13 +266,12 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
                   </div>
 
                   <p className="text-forest-600 text-sm text-center mb-1 max-w-xs">
-                    Банкны аппликейшнийг нээж QR кодыг уншуулан
+                    {tr('pay_scan_desc')}
                   </p>
                   <p className="font-bold text-forest-900 text-lg mb-4">
                     {formatPrice(booking.total_amount)}
                   </p>
 
-                  {/* Bank app buttons */}
                   <div className="grid grid-cols-3 gap-2 mb-5 w-full max-w-xs">
                     {(qpayData.urls ?? MOCK_BANK_URLS).slice(0, 6).map((url: any, i: number) => (
                       <a
@@ -311,25 +297,27 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
                   </div>
 
                   <button onClick={checkQPayStatus} className="btn-primary w-full max-w-xs flex items-center justify-center gap-2">
-                    <CheckCircle size={16} /> Төлбөр шалгах
+                    <CheckCircle size={16} /> {tr('pay_check')}
                   </button>
 
                   <p className="text-xs text-forest-400 mt-3 text-center">
-                    Дугаар: <span className="font-mono">{qpayData.invoice_id}</span>
+                    {tr('pay_invoice')}: <span className="font-mono">{qpayData.invoice_id}</span>
                   </p>
                 </div>
               )}
 
               <div className="flex items-center justify-center gap-2 mt-5 text-xs text-forest-400">
-                <Shield size={13} /> SSL шифрлэлтээр хамгаалагдсан
+                <Shield size={13} /> {tr('pay_ssl')}
               </div>
             </div>
           </div>
 
           {/* Right: Order summary */}
           <div className="lg:col-span-2">
-            <div className="card p-5">
-              <h2 className="font-semibold text-forest-900 mb-4 text-sm uppercase tracking-wide">Захиалгын мэдээлэл</h2>
+            <div className="card p-5 sticky top-24">
+              <h2 className="font-semibold text-forest-900 mb-4 text-xs uppercase tracking-widest text-forest-500">
+                {tr('pay_order_title')}
+              </h2>
 
               {booking.place?.cover_image && (
                 <div className="relative h-36 rounded-xl overflow-hidden mb-4">
@@ -343,24 +331,26 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
 
               <div className="space-y-2.5 text-sm">
                 <div className="flex items-center gap-2 text-forest-600">
-                  <Calendar size={14} />
+                  <Calendar size={14} className="text-forest-400 flex-shrink-0" />
                   <span>{formatDate(booking.check_in)} — {formatDate(booking.check_out)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-forest-600">
-                  <Users size={14} />
-                  <span>{booking.guest_count} хүн · {booking.nights} шөнө</span>
+                  <Users size={14} className="text-forest-400 flex-shrink-0" />
+                  <span>
+                    {booking.guest_count} {tr('pay_guests')} · {nights} {tr('pay_nights')}
+                  </span>
                 </div>
               </div>
 
               <div className="border-t border-forest-100 mt-4 pt-4 space-y-2 text-sm">
                 <div className="flex justify-between text-forest-600">
-                  <span>{formatPrice(booking.place?.price_per_night)} × {booking.nights} шөнө</span>
+                  <span>{formatPrice(booking.place?.price_per_night)} × {nights} {tr('pay_nights')}</span>
                 </div>
                 <div className="flex justify-between text-forest-600">
-                  <span>{booking.guest_count} хүн</span>
+                  <span>{booking.guest_count} {tr('pay_guests')}</span>
                 </div>
                 <div className="flex justify-between font-semibold text-forest-900 text-base pt-2 border-t border-forest-100">
-                  <span>Нийт дүн</span>
+                  <span>{tr('pay_total')}</span>
                   <span className="text-amber-600">{formatPrice(booking.total_amount)}</span>
                 </div>
               </div>
