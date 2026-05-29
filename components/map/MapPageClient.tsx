@@ -27,6 +27,8 @@ export default function MapPageClient({ places }: Props) {
   const filtered = useMemo(() =>
     places.filter(p =>
       p.latitude && p.longitude &&
+      p.latitude  >= -90  && p.latitude  <= 90  &&
+      p.longitude >= -180 && p.longitude <= 180 &&
       (filter === 'all' || p.type === filter) &&
       (search ? p.name.toLowerCase().includes(search.toLowerCase()) : true)
     ),
