@@ -33,19 +33,12 @@ export default function PlaceSubmitForm() {
   const [coverImage, setCoverImage] = useState('');
 
   async function uploadFile(file: File): Promise<string> {
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    if (!cloudName) throw new Error('Cloudinary тохируулагдаагүй байна');
     const fd = new FormData();
     fd.append('file', file);
-    fd.append('upload_preset', 'mongolian_resorts');
-    fd.append('folder', 'submissions');
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      { method: 'POST', body: fd }
-    );
+    const res = await fetch('/api/upload', { method: 'POST', body: fd });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message ?? 'Upload алдаа');
-    return data.secure_url;
+    if (!res.ok) throw new Error(data.error ?? 'Upload алдаа');
+    return data.url;
   }
 
   async function handleImages(e: React.ChangeEvent<HTMLInputElement>) {

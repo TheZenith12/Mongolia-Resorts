@@ -28,19 +28,15 @@ export default function ReviewsSection({ placeId, reviews, profile }: ReviewsSec
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    if (!cloudName) return;
     setUploadingImg(true);
     try {
       const urls: string[] = [];
       for (const file of files) {
         const fd = new FormData();
         fd.append('file', file);
-        fd.append('upload_preset', 'mongolian_resorts');
-        fd.append('folder', 'reviews');
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd });
+        const res = await fetch('/api/upload', { method: 'POST', body: fd });
         const data = await res.json();
-        if (data.secure_url) urls.push(data.secure_url);
+        if (data.url) urls.push(data.url);
       }
       setReviewImages(prev => [...prev, ...urls].slice(0, 4));
     } catch { toast.error('Upload error'); }
