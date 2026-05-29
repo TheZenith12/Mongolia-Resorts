@@ -80,9 +80,7 @@ export async function createBooking(formData: BookingFormData) {
   const nights = calculateNights(formData.check_in, formData.check_out);
   if (nights < 1) throw new Error('Буцах огноо буруу байна');
 
-  const base_amount    = ((place as any).price_per_night as number) * nights * formData.guest_count;
-  const discount_amount = (formData as any).discount_amount ?? 0;
-  const total_amount   = Math.max(0, base_amount - discount_amount);
+  const total_amount = ((place as any).price_per_night as number) * nights * formData.guest_count;
 
   const booking = await Booking.create({
     place_id:        formData.place_id,
@@ -97,17 +95,9 @@ export async function createBooking(formData: BookingFormData) {
     notes:           formData.notes ?? null,
     user_id:         sessionUser?.id ?? null,
     total_amount,
-    discount_amount,
-    coupon_id:       (formData as any).coupon_id ?? null,
     payment_status:  'pending',
     status:          'pending',
   });
-
-  // Купон хэрэглэлтийн тоог нэмэгдүүлнэ
-  if ((formData as any).coupon_id) {
-    const { useCoupon } = await import('@/lib/actions/coupons');
-    await useCoupon((formData as any).coupon_id);
-  }
 
   revalidatePath('/profile/bookings');
 
