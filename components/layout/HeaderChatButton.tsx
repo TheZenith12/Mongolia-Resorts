@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { usePathname } from 'next/navigation';
 import {
   MessageCircle, X, Send, ChevronLeft,
-  Loader2, CheckCheck, Store, HelpCircle,
+  Loader2, CheckCheck, HelpCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -34,10 +33,7 @@ interface Props {
 }
 
 export default function HeaderChatButton({ userId }: Props) {
-  const pathname = usePathname();
   const [open, setOpen]               = useState(false);
-  const [currentPlaceId,   setCurrentPlaceId]   = useState<string | null>(null);
-  const [currentPlaceName, setCurrentPlaceName] = useState<string | null>(null);
   const [view, setView]               = useState<View>('list');
   const [convs, setConvs]             = useState<Conv[]>([]);
   const [activeId, setActiveId]       = useState<string | null>(null);
@@ -47,33 +43,9 @@ export default function HeaderChatButton({ userId }: Props) {
   const [sending, setSending]         = useState(false);
   const [unread, setUnread]           = useState(0);
   const [convSubject, setConvSubject] = useState('');
-  const [newType, setNewType]         = useState<'place' | 'general'>('general');
   const bottomRef = useRef<HTMLDivElement>(null);
   const pollRef   = useRef<ReturnType<typeof setInterval> | null>(null);
   const panelRef  = useRef<HTMLDivElement>(null);
-
-  // Resolve place from URL: /places/[slug-or-id]
-  useEffect(() => {
-    const match = pathname.match(/^\/places\/([^/?#]+)/);
-    const slugOrId = match?.[1] ?? null;
-    if (!slugOrId) {
-      setCurrentPlaceId(null);
-      setCurrentPlaceName(null);
-      return;
-    }
-    fetch(`/api/places/${slugOrId}/info`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d?.id) {
-          setCurrentPlaceId(d.id);
-          setCurrentPlaceName(d.name ?? null);
-        } else {
-          setCurrentPlaceId(null);
-          setCurrentPlaceName(null);
-        }
-      })
-      .catch(() => { setCurrentPlaceId(null); setCurrentPlaceName(null); });
-  }, [pathname]);
 
   // Close on outside click
   useEffect(() => {
@@ -130,11 +102,6 @@ export default function HeaderChatButton({ userId }: Props) {
     else if (pollRef.current) clearInterval(pollRef.current);
   }, [open, fetchConvs]);
 
-  // Reset new type when navigating
-  useEffect(() => {
-    setNewType(currentPlaceId ? 'place' : 'general');
-  }, [currentPlaceId, pathname]);
-
   useEffect(() => {
     if (pollRef.current) clearInterval(pollRef.current);
     if (view === 'chat' && activeId) {
@@ -150,8 +117,7 @@ export default function HeaderChatButton({ userId }: Props) {
     await fetchMessages(id);
   }
 
-  function startNew(type: 'place' | 'general') {
-    setNewType(type);
+  function startNew() {
     setInput('');
     setSubject('');
     setView('new');
@@ -164,7 +130,6 @@ export default function HeaderChatButton({ userId }: Props) {
       setSending(true);
       try {
         const body: Record<string, string> = { first_message: input, subject: subject || '' };
-        if (newType === 'place' && currentPlaceId) body.place_id = currentPlaceId;
         const res = await fetch('/api/chat/conversations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -211,14 +176,11 @@ export default function HeaderChatButton({ userId }: Props) {
   }
 
   const headerLabel =
-    view === 'list' ? '💬 Чат дэмжлэг' :
-    view === 'new'  ? (newType === 'place' ? '🏕 Менежертэй холбогдох' : '💬 Дэмжлэг авах') :
+    view === 'list' ? '💬 Дэмжлэг & Чат' :
+    view === 'new'  ? '💬 Дэмжлэг авах' :
     convSubject || 'Яриа';
 
-  const headerSub =
-    view === 'new' && newType === 'place'
-      ? (currentPlaceName ?? 'Газрын менежер') + ' хариулна'
-      : 'Администратор хариулна';
+  const headerSub = 'Администратор хариулна';
 
   return (
     <div className="relative" ref={panelRef}>
@@ -263,24 +225,13 @@ export default function HeaderChatButton({ userId }: Props) {
           {/* LIST */}
           {view === 'list' && (
             <div className="flex-1 overflow-y-auto">
-              <div className="p-3 space-y-2 border-b border-forest-50">
-                {currentPlaceId && (
-                  <button
-                    onClick={() => startNew('place')}
-                    className="w-full flex items-center gap-2.5 py-2.5 px-3 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-sm font-medium transition-colors"
-                  >
-                    <Store size={15} />
-                    {currentPlaceName
-                      ? `"${currentPlaceName}" менежертэй холбогдох`
-                      : 'Энэ газрын менежертэй холбогдох'}
-                  </button>
-                )}
+              <div className="p-3 border-b border-forest-50">
                 <button
-                  onClick={() => startNew('general')}
+                  onClick={() => startNew()}
                   className="w-full flex items-center gap-2.5 py-2.5 px-3 bg-forest-600 hover:bg-forest-500 text-white rounded-xl text-sm font-medium transition-colors"
                 >
                   <HelpCircle size={15} />
-                  Дэмжлэг авах (Ерөнхий)
+                  Дэмжлэг авах (Admin)
                 </button>
               </div>
 
@@ -299,9 +250,7 @@ export default function HeaderChatButton({ userId }: Props) {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          {c.place_id
-                            ? <Store size={11} className="text-amber-500 flex-shrink-0" />
-                            : <HelpCircle size={11} className="text-forest-400 flex-shrink-0" />}
+                          <HelpCircle size={11} className="text-forest-400 flex-shrink-0" />
                           <span className="text-sm font-medium text-forest-900 truncate">{c.subject}</span>
                         </div>
                         <div className="text-xs text-forest-400 truncate">{c.last_message}</div>
@@ -324,23 +273,13 @@ export default function HeaderChatButton({ userId }: Props) {
           {/* NEW CONVERSATION */}
           {view === 'new' && (
             <div className="flex flex-col flex-1 p-4 gap-3 overflow-y-auto">
-              {newType === 'place' && currentPlaceName && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl">
-                  <Store size={14} className="text-amber-600 flex-shrink-0" />
-                  <span className="text-xs text-amber-700 font-medium">
-                    <strong>{currentPlaceName}</strong> газрын менежерт очно
-                  </span>
-                </div>
-              )}
-              {newType === 'general' && (
-                <input
-                  type="text"
-                  value={subject}
-                  onChange={e => setSubject(e.target.value)}
-                  placeholder="Яриын сэдэв (заавал биш)"
-                  className="w-full px-3 py-2 text-sm bg-forest-50 border border-forest-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-forest-400/30 text-forest-800 placeholder-forest-300"
-                />
-              )}
+              <input
+                type="text"
+                value={subject}
+                onChange={e => setSubject(e.target.value)}
+                placeholder="Яриын сэдэв (заавал биш)"
+                className="w-full px-3 py-2 text-sm bg-forest-50 border border-forest-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-forest-400/30 text-forest-800 placeholder-forest-300"
+              />
               <textarea
                 value={input}
                 onChange={e => setInput(e.target.value)}

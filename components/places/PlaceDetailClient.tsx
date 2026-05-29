@@ -35,6 +35,7 @@ import ReviewsSection from "@/components/places/ReviewsSection";
 import ShareButton from "@/components/places/ShareButton";
 import SeasonInfoCard from "@/components/places/SeasonInfo";
 import WeatherWidget from "@/components/places/WeatherWidget";
+import PlaceManagerChat from "@/components/places/PlaceManagerChat";
 import type { SeasonInfo } from "@/lib/seasons";
 
 export default function PlaceDetailClient({
@@ -80,6 +81,11 @@ export default function PlaceDetailClient({
       toast.error("Алдаа гарлаа");
     }
   }
+
+  // Only show manager chat for regular users (not admin/manager) when logged in
+  const showManagerChat =
+    profile &&
+    !['super_admin', 'manager'].includes(profile.role);
 
   return (
     <div className="min-h-screen bg-cream">
@@ -450,6 +456,15 @@ export default function PlaceDetailClient({
           </div>
         )}
       </div>
+
+      {/* Floating manager chat — shown only to logged-in regular users */}
+      {showManagerChat && (
+        <PlaceManagerChat
+          placeId={place.id}
+          placeName={place.name}
+          userId={(profile as any).id}
+        />
+      )}
     </div>
   );
 }
