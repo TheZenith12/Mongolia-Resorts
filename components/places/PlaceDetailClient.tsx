@@ -82,8 +82,9 @@ export default function PlaceDetailClient({
     }
   }
 
-  // Only show manager chat for regular users (not admin/manager) when logged in
+  // Only show manager chat on resort pages for regular logged-in users
   const showManagerChat =
+    place.type === 'resort' &&
     profile &&
     !['super_admin', 'manager'].includes(profile.role);
 
