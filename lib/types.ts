@@ -138,8 +138,6 @@ export interface BookingFormData {
   check_out: string;
   payment_method: PaymentMethod;
   notes?: string;
-  coupon_id?: string;
-  discount_amount?: number;
 }
 
 // =====================================================

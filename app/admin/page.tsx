@@ -230,7 +230,6 @@ export default async function AdminDashboard() {
               : [
                   { href: '/admin/bookings',  label: 'Захиалгууд',    icon: CalendarCheck },
                   { href: '/admin/places',    label: 'Газрууд',       icon: MapPin },
-                  { href: '/admin/coupons',   label: 'Купонууд',      icon: TrendingUp },
                   { href: '/admin/users',     label: 'Хэрэглэгчид',   icon: Users },
                 ]
             ).map(l => (

@@ -105,8 +105,9 @@ export default function PlaceManagerChat({ placeId, placeName, userId }: Props) 
 
       if (!convId) return;
       // Optimistic
+      const tempId = `temp-${Date.now()}`;
       const optimistic: Msg = {
-        id: Date.now().toString(),
+        id: tempId,
         sender_role: 'user',
         sender_name: 'Та',
         content: input,
@@ -115,12 +116,19 @@ export default function PlaceManagerChat({ placeId, placeName, userId }: Props) 
       setMessages(prev => [...prev, optimistic]);
       const text = input;
       setInput('');
-      await fetch(`/api/chat/conversations/${convId}/messages`, {
+      const res = await fetch(`/api/chat/conversations/${convId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: text }),
       });
-    } catch { /* ignore */ } finally { setSending(false); }
+      if (!res.ok) {
+        // Rollback optimistic message on failure
+        setMessages(prev => prev.filter(m => m.id !== tempId));
+        setInput(text);
+      }
+    } catch {
+      setInput(input);
+    } finally { setSending(false); }
   }
 
   // Floating bubble
@@ -153,7 +161,7 @@ export default function PlaceManagerChat({ placeId, placeName, userId }: Props) 
       <div className="bg-amber-500 px-4 py-3 flex items-center gap-3 flex-shrink-0">
         {view === 'chat' && (
           <button
-            onClick={() => setView('new')}
+            onClick={() => setView('bubble')}
             className="text-white/80 hover:text-white transition-colors"
           >
             <ChevronLeft size={18} />

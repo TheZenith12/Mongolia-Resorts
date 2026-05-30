@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectDB } from '@/lib/mongodb';
 import { Conversation, ChatMessage, Place, ManagerAssignment } from '@/lib/models';
+import { isObjectId } from '@/lib/slug';
 
 // GET /api/chat/conversations
 // super_admin → бүгд
@@ -23,7 +24,7 @@ export async function GET() {
   } else if (user.role === 'manager') {
     // Зөвхөн өөрийн газартай холбоотой chat
     const assignment = await ManagerAssignment.findOne({ manager_id: user.id }).lean();
-    const assignedPlaceId = (assignment as any)?.place_id ?? null;
+    const assignedPlaceId = (assignment as any)?.place_id?.toString() ?? null;
     if (!assignedPlaceId) return NextResponse.json([]);
     filter = { place_id: assignedPlaceId };
   } else {
@@ -67,9 +68,9 @@ export async function POST(req: NextRequest) {
 
   await connectDB();
 
-  // Амралтын газрын нэр авах
+  // Амралтын газрын нэр авах — зөвхөн хүчинтэй ObjectId байвал query хийнэ
   let placeName: string | null = null;
-  if (place_id) {
+  if (place_id && isObjectId(place_id)) {
     const place = await Place.findById(place_id).select('name').lean();
     placeName = (place as any)?.name ?? null;
   }

@@ -28,15 +28,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Холбоосны хугацаа дууссан байна. Дахин хүсэлт илгээнэ үү.' }, { status: 400 });
     }
 
-    const hashed = await bcrypt.hash(password, 12);
-
-    await User.findOneAndUpdate(
-      { email: record.email },
-      { password: hashed }
+    // Mark token as used FIRST (atomic check) — prevents replay even if password update fails
+    const claimed = await PasswordResetToken.findOneAndUpdate(
+      { _id: record._id, used: false },
+      { used: true }
     );
+    if (!claimed) {
+      return NextResponse.json({ error: 'Энэ холбоос аль хэдийн ашиглагдсан байна' }, { status: 400 });
+    }
 
-    // Mark token as used
-    await PasswordResetToken.findByIdAndUpdate(record._id, { used: true });
+    const hashed = await bcrypt.hash(password, 12);
+    await User.findOneAndUpdate({ email: record.email }, { password: hashed });
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {
