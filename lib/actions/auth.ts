@@ -1,7 +1,7 @@
 'use server';
 
 import { connectDB } from '@/lib/mongodb';
-import { User, Booking, Like, Review, Place, AvailabilityBlock } from '@/lib/models';
+import { User, Booking, Like, Review, Place, AvailabilityBlock, Room } from '@/lib/models';
 import { getCurrentUser } from '@/lib/auth-server';
 import type { BookingFormData } from '@/lib/types';
 import { calculateNights } from '@/lib/utils';
@@ -123,11 +123,19 @@ export async function getUserBookings() {
 
     // Fetch places for each booking
     const placeIds = Array.from(new Set(bookings.map((b: any) => b.place_id).filter(Boolean)));
-    const places = await Place.find({ _id: { $in: placeIds } }).lean();
+    const roomIds  = Array.from(new Set(bookings.map((b: any) => b.room_id).filter(Boolean)));
+
+    const [places, rooms] = await Promise.all([
+      Place.find({ _id: { $in: placeIds } }).lean(),
+      roomIds.length ? Room.find({ _id: { $in: roomIds } }).select('name').lean() : [],
+    ]);
+
     const placeMap = new Map(places.map((p: any) => [p._id.toString(), p]));
+    const roomMap  = new Map(rooms.map((r: any) => [r._id.toString(), r]));
 
     return bookings.map((b: any) => {
       const place = placeMap.get(b.place_id);
+      const room  = b.room_id ? roomMap.get(b.room_id) : null;
       return {
         ...b,
         id:         b._id.toString(),
@@ -139,6 +147,7 @@ export async function getUserBookings() {
           cover_image: (place as any).cover_image ?? null,
           type:        (place as any).type,
         } : null,
+        room_name: (room as any)?.name ?? null,
       };
     });
   } catch {

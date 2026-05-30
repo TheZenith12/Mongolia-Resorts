@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Calendar, Users, ArrowRight, RefreshCw,
-  CheckCircle2, Clock, XCircle, BadgeCheck, Loader2,
+  CheckCircle2, Clock, XCircle, BadgeCheck, Loader2, BedDouble,
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { cancelBooking } from '@/lib/actions/auth';
@@ -23,6 +23,7 @@ interface Booking {
   nights: number;
   total_amount: number;
   updated_at?: string;
+  room_name?: string | null;
   place?: {
     name: string;
     cover_image?: string;
@@ -270,6 +271,12 @@ export default function BookingsListClient({ initialBookings }: Props) {
                         <Users size={12} className="text-forest-400" />
                         {booking.guest_count} {tr('pay_guests')} · {booking.nights} {tr('pay_nights')}
                       </span>
+                      {booking.room_name && (
+                        <span className="flex items-center gap-1.5">
+                          <BedDouble size={12} className="text-forest-400" />
+                          {booking.room_name}
+                        </span>
+                      )}
                     </div>
 
                     {/* Price + actions */}
