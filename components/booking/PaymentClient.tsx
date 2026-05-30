@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   CreditCard, Smartphone, Shield, CheckCircle, ArrowLeft,
-  Calendar, Users, Building2, Copy, Check,
+  Calendar, Users, Building2, Copy, Check, AlertTriangle,
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
@@ -142,9 +142,17 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
           {/* Left: Payment form */}
           <div className="lg:col-span-3">
             <div className="card p-6">
-              <h1 className="font-display text-2xl font-semibold text-forest-900 mb-6">
+              <h1 className="font-display text-2xl font-semibold text-forest-900 mb-4">
                 {tr('pay_title')}
               </h1>
+
+              {/* ⚠️ Анхааруулга */}
+              <div className="flex gap-3 p-4 mb-6 bg-amber-50 border border-amber-200 rounded-xl">
+                <AlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-800 leading-relaxed">
+                  <strong className="font-semibold">Анхааруулга:</strong> Та худалдан авахаас өмнө тухайн газрын <strong>менежертэй холбогдож</strong>, захиалсан өрөө буюу байр <strong>сул эсэхийг заавал тодруулаарай.</strong> Урьдчилан тодруулаагүйгаас үүдэлтэй асуудалд бид хариуцлага хүлээхгүй болно.
+                </div>
+              </div>
 
               {step === 'review' && (
                 <>
