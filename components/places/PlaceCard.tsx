@@ -49,7 +49,7 @@ export default function PlaceCard({ place, liked = false, onLike, likeLoading = 
             ? 'bg-amber-50/90 text-amber-800 border-amber-200/60'
             : 'bg-forest-50/90 text-forest-700 border-forest-200/60'
         )}>
-          {isResort ? '🏕' : '🌿'} {getPlaceTypeLabel(place.type)}
+          {isResort ? <Tent size={10} /> : <Leaf size={10} />} {getPlaceTypeLabel(place.type)}
         </div>
 
         {/* Like button */}

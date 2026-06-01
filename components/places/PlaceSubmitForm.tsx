@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   MapPin, Image as ImageIcon, FileText, Phone, Globe,
-  Loader2, ArrowLeft, CheckCircle, Upload, X
+  Loader2, ArrowLeft, CheckCircle, Upload, X, Tent, Leaf
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { submitPlace } from '@/lib/actions/places';
@@ -143,8 +143,8 @@ export default function PlaceSubmitForm() {
           <label className="block text-sm font-medium text-forest-700 mb-2">Газрын төрөл</label>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { value: 'nature', label: '🌿 Байгалийн газар', desc: 'Нуур, уул, хүрхрээ гэх мэт' },
-              { value: 'resort', label: '🏕 Амралтын газар', desc: 'Гэр кэмп, ресорт, жуулчны баaz' },
+              { value: 'nature', icon: <Leaf size={16} />, label: 'Байгалийн газар', desc: 'Нуур, уул, хүрхрээ гэх мэт' },
+              { value: 'resort', icon: <Tent size={16} />, label: 'Амралтын газар', desc: 'Гэр кэмп, ресорт, жуулчны баaz' },
             ].map(t => (
               <button key={t.value} type="button"
                 onClick={() => setType(t.value as any)}
@@ -154,7 +154,7 @@ export default function PlaceSubmitForm() {
                     : 'border-forest-100 hover:border-forest-300'
                 }`}
               >
-                <div className="font-medium text-forest-900 text-sm">{t.label}</div>
+                <div className="flex items-center gap-1.5 font-medium text-forest-900 text-sm">{t.icon}{t.label}</div>
                 <div className="text-xs text-forest-500 mt-0.5">{t.desc}</div>
               </button>
             ))}
@@ -276,7 +276,7 @@ export default function PlaceSubmitForm() {
 
         {/* Notice */}
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-          <strong>📋 Анхаар:</strong> Газрын мэдээллийг илгээсний дараа админ 24–48 цагт хянаж зөвшөөрнө.
+          <strong>Анхаар:</strong> Газрын мэдээллийг илгээсний дараа админ 24–48 цагт хянаж зөвшөөрнө.
           Зөвшөөрөгдсөн тохиолдолд таны газар нийтэд харагдана.
         </div>
 
@@ -286,7 +286,7 @@ export default function PlaceSubmitForm() {
             <span className="flex items-center gap-2 justify-center">
               <Loader2 size={16} className="animate-spin" /> Илгээж байна...
             </span>
-          ) : '📍 Газар илгээх'}
+          ) : 'Газар илгээх'}
         </button>
       </form>
     </div>

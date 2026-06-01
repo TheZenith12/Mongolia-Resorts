@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, Users, CreditCard, Smartphone, ArrowRight, Lock, Loader2, User, Phone, Copy, Check, Building2 } from 'lucide-react';
+import { Calendar, Users, CreditCard, Smartphone, ArrowRight, Lock, Loader2, User, Phone, Copy, Check, Building2, Leaf, BedDouble } from 'lucide-react';
 import { formatPrice, calculateNights } from '@/lib/utils';
 import { createBooking, getBookedDateRanges } from '@/lib/actions/auth';
 import { toast } from 'react-hot-toast';
@@ -118,7 +118,7 @@ export default function BookingPanel({ place, profile }: any) {
     return (
       <div className="card p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-forest-50 rounded-xl flex items-center justify-center text-xl">🌿</div>
+          <div className="w-10 h-10 bg-forest-50 rounded-xl flex items-center justify-center text-forest-500"><Leaf size={20} /></div>
           <div>
             <div className="font-semibold text-forest-900 text-sm">{tr('book_free_place')}</div>
             <div className="text-xs text-forest-500">{tr('place_free')}</div>
@@ -166,14 +166,14 @@ export default function BookingPanel({ place, profile }: any) {
                 {room.cover_image ? (
                   <img src={room.cover_image} alt={room.name} className="w-12 h-10 rounded-lg object-cover flex-shrink-0" />
                 ) : (
-                  <div className="w-12 h-10 rounded-lg bg-forest-100 flex items-center justify-center text-lg flex-shrink-0">🛏</div>
+                  <div className="w-12 h-10 rounded-lg bg-forest-100 flex items-center justify-center text-forest-400 flex-shrink-0"><BedDouble size={18} /></div>
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-1">
                     <span className="font-medium text-forest-900 text-sm leading-tight">{room.name}</span>
                     <span className="font-bold text-amber-600 text-sm flex-shrink-0">{formatPrice(room.price_per_night)}</span>
                   </div>
-                  <div className="text-xs text-forest-500 mt-0.5">👥 {room.capacity} хүн · 🏨 {room.quantity} өрөө</div>
+                  <div className="flex items-center gap-2 text-xs text-forest-500 mt-0.5"><Users size={10} /> {room.capacity} хүн · <Building2 size={10} /> {room.quantity} өрөө</div>
                 </div>
                 {selectedRoom?.id === room.id && (
                   <div className="w-5 h-5 rounded-full bg-forest-600 flex items-center justify-center flex-shrink-0 mt-0.5">

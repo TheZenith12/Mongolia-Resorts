@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Calendar, Users, ArrowRight, RefreshCw,
-  CheckCircle2, Clock, XCircle, BadgeCheck, Loader2, BedDouble,
+  CheckCircle2, Clock, XCircle, BadgeCheck, Loader2, BedDouble, Tent, Leaf,
 } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { cancelBooking } from '@/lib/actions/auth';
@@ -178,7 +178,7 @@ export default function BookingsListClient({ initialBookings }: Props) {
   if (bookings.length === 0) {
     return (
       <div className="card p-12 text-center">
-        <div className="text-5xl mb-4">🏕</div>
+        <div className="flex justify-center mb-4"><Tent size={48} className="text-forest-200" /></div>
         <h2 className="font-display text-2xl font-semibold text-forest-700 mb-2">
           {tr('prof_no_bookings')}
         </h2>
@@ -223,8 +223,8 @@ export default function BookingsListClient({ initialBookings }: Props) {
                         <Image src={place.cover_image} alt={place.name ?? ''} fill className="object-cover" />
                       </div>
                     ) : (
-                      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-forest-50 flex items-center justify-center text-3xl">
-                        {place?.type === 'resort' ? '🏕' : '🌿'}
+                      <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-xl flex items-center justify-center ${place?.type === 'resort' ? 'bg-amber-50 text-amber-300' : 'bg-forest-50 text-forest-300'}`}>
+                        {place?.type === 'resort' ? <Tent size={36} /> : <Leaf size={36} />}
                       </div>
                     )}
                   </div>

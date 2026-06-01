@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, MapPin, CalendarCheck, Users,
   Star, Settings, LogOut, Leaf, ChevronRight, Building2, CalendarX, MessageCircle, Menu, X, CreditCard,
+  Tent, Crown, Key,
 } from 'lucide-react';
 import { cn, getInitials } from '@/lib/utils';
 import { signOut as nextAuthSignOut } from 'next-auth/react';
@@ -130,7 +131,7 @@ export default function AdminSidebar({
       {isManager && assignedPlaceName && (
         <div className="mx-3 mt-3 px-3 py-2 bg-forest-800/60 rounded-xl border border-forest-700">
           <div className="text-[10px] text-forest-500 uppercase tracking-wider mb-0.5">Оноогдсон газар</div>
-          <div className="text-amber-300 text-xs font-semibold truncate">🏕 {assignedPlaceName}</div>
+          <div className="flex items-center gap-1.5 text-amber-300 text-xs font-semibold truncate"><Tent size={11} /> {assignedPlaceName}</div>
         </div>
       )}
 
@@ -186,7 +187,9 @@ export default function AdminSidebar({
           <div className="flex-1 min-w-0">
             <div className="text-white text-sm font-medium truncate">{profile.full_name}</div>
             <div className="text-forest-400 text-xs">
-              {profile.role === 'super_admin' ? '👑 Super Admin' : '🔑 Manager'}
+              {profile.role === 'super_admin'
+                ? <span className="flex items-center gap-1"><Crown size={10} /> Super Admin</span>
+                : <span className="flex items-center gap-1"><Key size={10} /> Manager</span>}
             </div>
           </div>
         </div>

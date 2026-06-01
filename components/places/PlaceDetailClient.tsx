@@ -188,7 +188,7 @@ export default function PlaceDetailClient({
                       : "bg-forest-50 text-forest-700 border-forest-200",
                   )}
                 >
-                  {isResort ? "🏕" : "🌿"} {getPlaceTypeLabel(place.type)}
+                  {isResort ? <Tent size={11} /> : <Leaf size={11} />} {getPlaceTypeLabel(place.type)}
                 </div>
                 <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-semibold text-forest-950 leading-tight">
                   {place.name}
@@ -422,7 +422,7 @@ export default function PlaceDetailClient({
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center text-4xl">
-                        {sp.type === 'resort' ? '🏕' : '🌿'}
+                        {sp.type === 'resort' ? <Tent size={32} className="text-amber-300" /> : <Leaf size={32} className="text-forest-300" />}
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-forest-950/50 via-transparent to-transparent" />

@@ -199,8 +199,8 @@ export default function ChatWidget({ userId }: { userId: string }) {
             )}
             <div className="flex-1">
               <div className="text-white font-semibold text-sm">
-                {view === 'list' ? '💬 Чат дэмжлэг' :
-                 view === 'new'  ? (newType === 'place' ? '🏕 Менежертэй холбогдох' : '💬 Дэмжлэг авах') :
+                {view === 'list' ? 'Чат дэмжлэг' :
+                 view === 'new'  ? (newType === 'place' ? 'Менежертэй холбогдох' : 'Дэмжлэг авах') :
                  convSubject || 'Яриа'}
               </div>
               <div className="text-forest-300 text-[10px]">

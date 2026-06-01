@@ -82,8 +82,8 @@ export default function PlaceForm({ place, mode }: { place?: any; mode: 'create'
   }
 
   const tabs = [
-    { id: 'info',  label: '📋 Мэдээлэл' },
-    ...(mode === 'edit' && type === 'resort' ? [{ id: 'rooms', label: '🛏 Өрөөнүүд' }] : []),
+    { id: 'info',  label: 'Мэдээлэл' },
+    ...(mode === 'edit' && type === 'resort' ? [{ id: 'rooms', label: 'Өрөөнүүд' }] : []),
   ] as { id: 'info' | 'rooms'; label: string }[];
 
   return (

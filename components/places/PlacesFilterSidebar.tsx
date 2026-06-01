@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { SlidersHorizontal, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { SlidersHorizontal, X, ChevronDown, ChevronUp, Globe, Tent, Leaf, Star } from 'lucide-react';
 import { MONGOLIAN_PROVINCES } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useLang } from '@/lib/lang-context';
@@ -31,9 +31,9 @@ export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProp
 
   const RATING_OPTIONS = [
     { value: '',  label: tr('filter_rating_all') },
-    { value: '4', label: '4+ ⭐' },
-    { value: '3', label: '3+ ⭐' },
-    { value: '2', label: '2+ ⭐' },
+    { value: '4', label: '4+' },
+    { value: '3', label: '3+' },
+    { value: '2', label: '2+' },
   ];
 
   function apply() {
@@ -78,9 +78,9 @@ export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProp
         </label>
         <div className="space-y-2">
           {[
-            { value: '',       label: tr('filter_all'),    icon: '🗺️' },
-            { value: 'resort', label: tr('filter_resort'), icon: '🏕' },
-            { value: 'nature', label: tr('filter_nature'), icon: '🌿' },
+            { value: '',       label: tr('filter_all'),    icon: <Globe size={14} /> },
+            { value: 'resort', label: tr('filter_resort'), icon: <Tent  size={14} /> },
+            { value: 'nature', label: tr('filter_nature'), icon: <Leaf  size={14} /> },
           ].map((opt) => (
             <button
               key={opt.value}
@@ -92,7 +92,7 @@ export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProp
                   : 'text-forest-600 hover:bg-forest-50'
               )}
             >
-              <span>{opt.icon}</span> {opt.label}
+              {opt.icon} {opt.label}
             </button>
           ))}
         </div>
@@ -137,12 +137,13 @@ export default function PlacesFilterSidebar({ current }: PlacesFilterSidebarProp
                 key={opt.value}
                 onClick={() => setMinRating(opt.value)}
                 className={cn(
-                  'w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-left transition-all',
+                  'w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-left transition-all',
                   minRating === opt.value
                     ? 'bg-amber-500 text-white font-medium'
                     : 'text-forest-600 hover:bg-forest-50'
                 )}
               >
+                {opt.value ? <Star size={12} className={minRating === opt.value ? 'fill-white' : 'fill-amber-400 text-amber-400'} /> : null}
                 {opt.label}
               </button>
             ))}

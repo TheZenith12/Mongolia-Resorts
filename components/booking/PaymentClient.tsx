@@ -146,7 +146,7 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
                 {tr('pay_title')}
               </h1>
 
-              {/* ⚠️ Анхааруулга */}
+              {/* Анхааруулга */}
               <div className="flex gap-3 p-4 mb-6 bg-amber-50 border border-amber-200 rounded-xl">
                 <AlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-amber-800 leading-relaxed">
@@ -296,7 +296,7 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
                         </div>
                       </div>
                       <button type="submit" disabled={loading} className="btn-primary w-full py-4 mt-6">
-                        {loading ? tr('pay_processing') : `💳 ${formatPrice(booking.total_amount)}`}
+                        {loading ? tr('pay_processing') : formatPrice(booking.total_amount)}
                       </button>
                     </form>
                   )}

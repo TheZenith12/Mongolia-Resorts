@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   MessageCircle, X, Send, ChevronLeft,
-  Loader2, CheckCheck, Store,
+  Loader2, CheckCheck, Store, Tent,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -168,7 +168,7 @@ export default function PlaceManagerChat({ placeId, placeName, userId }: Props) 
           </button>
         )}
         <div className="flex-1 min-w-0">
-          <div className="text-white font-semibold text-sm truncate">🏕 Менежертэй холбогдох</div>
+          <div className="flex items-center gap-1.5 text-white font-semibold text-sm truncate"><Tent size={13} /> Менежертэй холбогдох</div>
           <div className="text-amber-100 text-[10px] truncate">{placeName}</div>
         </div>
         <button

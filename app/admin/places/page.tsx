@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { connectDB } from '@/lib/mongodb';
 import { Place, ManagerAssignment } from '@/lib/models';
 import { formatPrice, getPlaceTypeLabel, getPlaceTypeColor } from '@/lib/utils';
-import { Plus, MapPin, Clock, User } from 'lucide-react';
+import { Plus, MapPin, Clock, User, Tent, Leaf } from 'lucide-react';
 import AdminPlaceActions from '@/components/admin/AdminPlaceActions';
 import PendingPlaceActions from '@/components/admin/PendingPlaceActions';
 import { redirect } from 'next/navigation';
@@ -141,8 +141,8 @@ export default async function AdminPlacesPage({
                     {place.cover_image ? (
                       <Image src={place.cover_image} alt={place.name} width={56} height={56} className="object-cover w-full h-full" unoptimized />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xl">
-                        {place.type === 'resort' ? '🏕' : '🌿'}
+                      <div className={`w-full h-full flex items-center justify-center ${place.type === 'resort' ? 'text-amber-400' : 'text-forest-400'}`}>
+                        {place.type === 'resort' ? <Tent size={24} /> : <Leaf size={24} />}
                       </div>
                     )}
                   </div>
@@ -176,8 +176,8 @@ export default async function AdminPlacesPage({
                   {place.cover_image ? (
                     <Image src={place.cover_image} alt={place.name} width={48} height={48} className="object-cover w-full h-full" unoptimized />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-lg">
-                      {place.type === 'resort' ? '🏕' : '🌿'}
+                    <div className={`w-full h-full flex items-center justify-center ${place.type === 'resort' ? 'text-amber-400' : 'text-forest-400'}`}>
+                      {place.type === 'resort' ? <Tent size={20} /> : <Leaf size={20} />}
                     </div>
                   )}
                 </div>
@@ -225,8 +225,8 @@ export default async function AdminPlacesPage({
                         {place.cover_image ? (
                           <Image src={place.cover_image} alt={place.name} width={48} height={48} className="object-cover w-full h-full" unoptimized />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-lg">
-                            {place.type === 'resort' ? '🏕' : '🌿'}
+                          <div className={`w-full h-full flex items-center justify-center ${place.type === 'resort' ? 'text-amber-400' : 'text-forest-400'}`}>
+                            {place.type === 'resort' ? <Tent size={20} /> : <Leaf size={20} />}
                           </div>
                         )}
                       </div>

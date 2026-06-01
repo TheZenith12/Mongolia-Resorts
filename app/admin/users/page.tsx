@@ -4,6 +4,7 @@ import { formatDate, getInitials } from '@/lib/utils';
 import AdminUserRoleChange from '@/components/admin/AdminUserRoleChange';
 import { connectDB } from '@/lib/mongodb';
 import { User, ManagerAssignment, Place } from '@/lib/models';
+import { Tent } from 'lucide-react';
 
 async function getUsers() {
   await connectDB();
@@ -79,7 +80,7 @@ export default async function AdminUsersPage() {
                   </div>
                   <div className="text-xs text-forest-400 truncate mt-0.5">{user.email}</div>
                   {assignedPlace && (
-                    <div className="text-xs text-forest-600 mt-0.5">🏕 {assignedPlace}</div>
+                    <div className="flex items-center gap-1 text-xs text-forest-600 mt-0.5"><Tent size={10} /> {assignedPlace}</div>
                   )}
                 </div>
                 <AdminUserRoleChange

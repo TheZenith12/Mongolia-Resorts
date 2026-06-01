@@ -176,8 +176,8 @@ export default function HeaderChatButton({ userId }: Props) {
   }
 
   const headerLabel =
-    view === 'list' ? '💬 Дэмжлэг & Чат' :
-    view === 'new'  ? '💬 Дэмжлэг авах' :
+    view === 'list' ? 'Дэмжлэг & Чат' :
+    view === 'new'  ? 'Дэмжлэг авах' :
     convSubject || 'Яриа';
 
   const headerSub = 'Администратор хариулна';

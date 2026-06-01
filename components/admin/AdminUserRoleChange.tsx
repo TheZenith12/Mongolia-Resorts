@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { Search, Tent } from 'lucide-react';
 import type { UserRole } from '@/lib/types';
 
 interface Place { id: string; name: string; }
@@ -79,9 +80,9 @@ export default function AdminUserRoleChange({ userId, currentRole, assignedPlace
         disabled={loading}
         className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-forest-700 focus:outline-none focus:ring-1 focus:ring-forest-400 disabled:opacity-50"
       >
-        <option value="user">👤 Хэрэглэгч</option>
-        <option value="manager">🔑 Manager</option>
-        <option value="super_admin">👑 Super Admin</option>
+        <option value="user">Хэрэглэгч</option>
+        <option value="manager">Manager</option>
+        <option value="super_admin">Super Admin</option>
       </select>
 
       {/* Place selector — manager сонгосон үед харагдана */}
@@ -89,7 +90,7 @@ export default function AdminUserRoleChange({ userId, currentRole, assignedPlace
         <div className="flex flex-col gap-1.5">
           {assignedPlaceId && currentPlaceName && (
             <div className="text-[10px] text-forest-500 px-1">
-              Одоо: <span className="font-semibold text-forest-700">🏕 {currentPlaceName}</span>
+              Одоо: <span className="inline-flex items-center gap-1 font-semibold text-forest-700"><Tent size={11} /> {currentPlaceName}</span>
             </div>
           )}
           {/* Search input */}
@@ -97,7 +98,7 @@ export default function AdminUserRoleChange({ userId, currentRole, assignedPlace
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="🔍 Газар хайх..."
+            placeholder="Газар хайх..."
             className="text-xs border border-amber-200 rounded-lg px-2.5 py-1.5 bg-white text-forest-700 focus:outline-none focus:ring-1 focus:ring-amber-400 placeholder-forest-300"
           />
           <div className="flex gap-1.5 items-center">

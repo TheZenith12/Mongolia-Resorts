@@ -56,10 +56,10 @@ export default function BookingChat({ bookingId, currentUserId }: BookingChatPro
   };
 
   const TEMPLATES = [
-    'Таны захиалгыг баталгаажууллаа. Тавтай морилно уу! 🏕',
+    'Таны захиалгыг баталгаажууллаа. Тавтай морилно уу!',
     'Та хэзээ ирэх вэ? Бид бэлэн байна.',
     'Захиалгын мэдээллийг баталгаажуулна уу: огноо, зочдын тоо.',
-    'Аялал сайхан болтугай! Дахиад ирнэ үү 🙏',
+    'Аялал сайхан болтугай! Дахиад ирнэ үү.',
     'Асуух зүйл байвал бидэнтэй холбогдоорой.',
   ];
   const [showTemplates, setShowTemplates] = useState(false);
@@ -72,7 +72,7 @@ export default function BookingChat({ bookingId, currentUserId }: BookingChatPro
           onClick={() => setShowTemplates(!showTemplates)}
           className="text-xs text-forest-400 hover:text-forest-600 transition-colors"
         >
-          {showTemplates ? 'Хаах' : '⚡ Загвар'}
+          {showTemplates ? 'Хаах' : 'Загвар'}
         </button>
       </div>
 

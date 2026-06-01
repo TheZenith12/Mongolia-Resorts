@@ -1,8 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Cloud, Wind, Droplets, Thermometer } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Cloud, Wind, Droplets, Thermometer, Sun, CloudSun, CloudRain, CloudDrizzle, CloudLightning, Snowflake, CloudFog } from 'lucide-react';
 import { useLang } from '@/lib/lang-context';
+
+type WeatherIconKey = 'sun' | 'cloud-sun' | 'cloud' | 'fog' | 'drizzle' | 'rain' | 'snow' | 'thunder' | 'partly';
+
+const WEATHER_ICONS: Record<WeatherIconKey, React.ComponentType<{ size?: number; className?: string }>> = {
+  sun:        Sun,
+  'cloud-sun': CloudSun,
+  cloud:      Cloud,
+  fog:        CloudFog,
+  drizzle:    CloudDrizzle,
+  rain:       CloudRain,
+  snow:       Snowflake,
+  thunder:    CloudLightning,
+  partly:     CloudSun,
+};
+
+const WEATHER_COLORS: Record<WeatherIconKey, string> = {
+  sun:        'text-amber-400',
+  'cloud-sun': 'text-amber-300',
+  cloud:      'text-gray-400',
+  fog:        'text-gray-400',
+  drizzle:    'text-blue-400',
+  rain:       'text-blue-500',
+  snow:       'text-sky-400',
+  thunder:    'text-purple-500',
+  partly:     'text-amber-300',
+};
 
 interface WeatherData {
   temp: number;
@@ -10,7 +36,7 @@ interface WeatherData {
   humidity: number;
   wind: number;
   desc: string;
-  icon: string;
+  icon: WeatherIconKey;
 }
 
 interface Props {
@@ -64,7 +90,7 @@ export default function WeatherWidget({ province }: Props) {
           humidity:   parseInt(cur.humidity),
           wind:       parseInt(cur.windspeedKmph),
           desc:       cur.lang_mn?.[0]?.value ?? cur.weatherDesc?.[0]?.value ?? '',
-          icon:       getWeatherEmoji(parseInt(cur.weatherCode)),
+          icon:       getWeatherIcon(parseInt(cur.weatherCode)),
         });
       })
       .catch(() => {})
@@ -92,7 +118,7 @@ export default function WeatherWidget({ province }: Props) {
       </h3>
 
       <div className="flex items-center gap-4 mb-3">
-        <div className="text-4xl">{weather.icon}</div>
+        {(() => { const Icon = WEATHER_ICONS[weather.icon]; return <Icon size={40} className={WEATHER_COLORS[weather.icon]} />; })()}
         <div>
           <div className="text-3xl font-bold text-forest-900">{weather.temp}°C</div>
           <div className="text-sm text-forest-500">{weather.desc}</div>
@@ -117,14 +143,14 @@ export default function WeatherWidget({ province }: Props) {
   );
 }
 
-function getWeatherEmoji(code: number): string {
-  if (code === 113) return '☀️';
-  if (code === 116) return '⛅';
-  if (code === 119 || code === 122) return '☁️';
-  if ([143,248,260].includes(code)) return '🌫️';
-  if ([176,263,266,293,296].includes(code)) return '🌦️';
-  if ([299,302,305,308].includes(code)) return '🌧️';
-  if ([179,182,185,227,230,323,326,329,332,335,338,350,368,371,374,377].includes(code)) return '❄️';
-  if ([200,386,389,392,395].includes(code)) return '⛈️';
-  return '🌤️';
+function getWeatherIcon(code: number): WeatherIconKey {
+  if (code === 113) return 'sun';
+  if (code === 116) return 'cloud-sun';
+  if (code === 119 || code === 122) return 'cloud';
+  if ([143,248,260].includes(code)) return 'fog';
+  if ([176,263,266,293,296].includes(code)) return 'drizzle';
+  if ([299,302,305,308].includes(code)) return 'rain';
+  if ([179,182,185,227,230,323,326,329,332,335,338,350,368,371,374,377].includes(code)) return 'snow';
+  if ([200,386,389,392,395].includes(code)) return 'thunder';
+  return 'partly';
 }

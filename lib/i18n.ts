@@ -4,9 +4,9 @@ export const t = {
   mn: {
     // ── Header / Nav ───────────────────────────────────────────────────────────
     nav_home:       'Нүүр',
-    nav_resorts:    '🏕 Амралтын газар',
-    nav_nature:     '🌿 Байгалийн газар',
-    nav_map:        '🗺️ Газрын зураг',
+    nav_resorts:    'Амралтын газар',
+    nav_nature:     'Байгалийн газар',
+    nav_map:        'Газрын зураг',
     nav_login:      'Нэвтрэх',
     nav_register:   'Бүртгүүлэх',
     nav_logout:     'Гарах',
@@ -17,13 +17,13 @@ export const t = {
     // ── Hero ───────────────────────────────────────────────────────────────────
     hero_badge:     'газар нэгдсэн платформ',
     hero_heading1:  'Монголын',
-    hero_heading2:  'Гайхалт',
+    hero_heading2:  'Гайхамшигт',
     hero_heading3:  'Байгалийг',
     hero_heading4:  'Үзээрэй',
     hero_sub:       'Амралтын газар, байгалийн үзэсгэлэнт газруудыг нэг дороос хайж, захиалаарай. Монгол нутгийн гоо үзэсгэлэнг мэдрэх цаг нь болжээ.',
     hero_all:       'Бүгд',
-    hero_resort:    '🏕 Амралтын',
-    hero_nature:    '🌿 Байгалийн',
+    hero_resort:    'Амралтын',
+    hero_nature:    'Байгалийн',
     hero_province:  'Бүх аймаг',
     hero_min_price: 'Доод үнэ',
     hero_max_price: 'Дээд үнэ',
@@ -72,7 +72,7 @@ export const t = {
     book_free_place:'Байгалийн газар',
     book_free_desc: 'Энэ байгалийн үзэсгэлэнт газар нийтийн хэрэглээнд нээлттэй.',
     book_direction: 'Замын заалт авах',
-    book_conflict:  '⚠️ Сонгосон огноонд аль хэдийн захиалга байна.',
+    book_conflict:  'Сонгосон огноонд аль хэдийн захиалга байна.',
     book_login:     'Захиалахын тулд нэвтрэх шаардлагатай',
     book_nights:    'шөнө',
     book_bank:      'Банкны шилжүүлэг',
@@ -127,8 +127,8 @@ export const t = {
 
     // ── Places Section ─────────────────────────────────────────────────────────
     places_all:       'Бүх газрууд',
-    places_resorts:   '🏕 Амралтын газрууд',
-    places_nature:    '🌿 Байгалийн газрууд',
+    places_resorts:   'Амралтын газрууд',
+    places_nature:    'Байгалийн газрууд',
     places_found:     'газар олдлоо',
     places_not_found: 'Газар олдсонгүй',
     places_no_result: 'Хайлтын нөхцөлийг өөрчлөөд дахин оролдоно уу',
@@ -140,7 +140,7 @@ export const t = {
     sort_price:   'Үнээр',
 
     // ── Like ───────────────────────────────────────────────────────────────────
-    liked_saved:   '❤️ Хадгаллаа',
+    liked_saved:   'Хадгаллаа',
     liked_removed: 'Хадгалалтаас хасагдлаа',
 
     // ── Booking Status ─────────────────────────────────────────────────────────
@@ -165,7 +165,7 @@ export const t = {
     pay_qpay_label:     'QPay төлбөр',
     pay_qpay_sub:       'Монголын банкны аппликейшнээр төлнө',
     pay_qpay_desc:      'Дараах товч дарахад QPay QR код үүснэ. Та өөрийн банкны аппликейшнийг нээж QR кодыг уншуулан төлбөрөө хийнэ үү.',
-    pay_qpay_btn:       '📱 QPay QR Код Үүсгэх',
+    pay_qpay_btn:       'QPay QR Код Үүсгэх',
     pay_card_label:     'Карттай төлбөр',
     pay_card_num:       'Картын дугаар',
     pay_card_name:      'Эзэмшигчийн нэр',
@@ -198,7 +198,7 @@ export const t = {
     prof_no_bookings:   'Захиалга байхгүй байна',
     prof_no_bookings_sub: 'Амралтын газар захиалж, Монголын байгалийг мэдрэх цаг боллоо!',
     prof_no_fav:        'Дуртай газар байхгүй байна',
-    prof_no_fav_sub:    'Газрын картан дахь ❤️ товчийг дарж дуртай газраа хадгалаарай',
+    prof_no_fav_sub:    'Газрын картан дахь зүрхний товчийг дарж дуртай газраа хадгалаарай',
     prof_search:        'Газар хайх',
     prof_pay_now:       'Төлбөр хийх',
     prof_cancel:        'Цуцлах',
@@ -216,7 +216,7 @@ export const t = {
     submit_title:   'Газар нэмэх',
     submit_desc:    'Та мэддэг байгалийн үзэсгэлэнт газар, амралтын газраа нэмж, бусдад танилцуулаарай.',
     submit_notice:  'Газрын мэдээллийг илгээсний дараа админ 24–48 цагт хянаж зөвшөөрнө.',
-    submit_btn:     '📍 Газар илгээх',
+    submit_btn:     'Газар илгээх',
     submit_sending: 'Илгээж байна...',
     submit_success: 'Амжилттай илгээгдлээ!',
     submit_success_desc: 'Таны нэмсэн газар админд хянуулахаар илгээгдлээ.',
@@ -237,9 +237,9 @@ export const t = {
   en: {
     // ── Header / Nav ───────────────────────────────────────────────────────────
     nav_home:       'Home',
-    nav_resorts:    '🏕 Resorts',
-    nav_nature:     '🌿 Nature',
-    nav_map:        '🗺️ Map',
+    nav_resorts:    'Resorts',
+    nav_nature:     'Nature',
+    nav_map:        'Map',
     nav_login:      'Sign In',
     nav_register:   'Sign Up',
     nav_logout:     'Sign Out',
@@ -255,8 +255,8 @@ export const t = {
     hero_heading4:  'Awaits You',
     hero_sub:       'Discover resorts and natural wonders across Mongolia. Find, compare and book your perfect getaway in one place.',
     hero_all:       'All',
-    hero_resort:    '🏕 Resorts',
-    hero_nature:    '🌿 Nature',
+    hero_resort:    'Resorts',
+    hero_nature:    'Nature',
     hero_province:  'All provinces',
     hero_min_price: 'Min price',
     hero_max_price: 'Max price',
@@ -305,7 +305,7 @@ export const t = {
     book_free_place:'Nature spot',
     book_free_desc: 'This natural attraction is open to the public.',
     book_direction: 'Get directions',
-    book_conflict:  '⚠️ This date is already booked. Please choose another date.',
+    book_conflict:  'This date is already booked. Please choose another date.',
     book_login:     'Please sign in to make a booking',
     book_nights:    'nights',
     book_bank:      'Bank Transfer',
@@ -360,8 +360,8 @@ export const t = {
 
     // ── Places Section ─────────────────────────────────────────────────────────
     places_all:       'All Places',
-    places_resorts:   '🏕 Resorts',
-    places_nature:    '🌿 Nature Spots',
+    places_resorts:   'Resorts',
+    places_nature:    'Nature Spots',
     places_found:     'places found',
     places_not_found: 'No places found',
     places_no_result: 'Try adjusting your filters or search terms',
@@ -373,7 +373,7 @@ export const t = {
     sort_price:   'By price',
 
     // ── Like ───────────────────────────────────────────────────────────────────
-    liked_saved:   '❤️ Saved',
+    liked_saved:   'Saved',
     liked_removed: 'Removed from favorites',
 
     // ── Booking Status ─────────────────────────────────────────────────────────
@@ -398,7 +398,7 @@ export const t = {
     pay_qpay_label:     'QPay Payment',
     pay_qpay_sub:       'Pay via Mongolian banking apps',
     pay_qpay_desc:      'Click the button below to generate a QPay QR code. Open your banking app and scan the code to complete the payment.',
-    pay_qpay_btn:       '📱 Generate QPay QR Code',
+    pay_qpay_btn:       'Generate QPay QR Code',
     pay_card_label:     'Card Payment',
     pay_card_num:       'Card number',
     pay_card_name:      'Cardholder name',
@@ -431,7 +431,7 @@ export const t = {
     prof_no_bookings:   'No bookings yet',
     prof_no_bookings_sub: 'Time to explore Mongolia — book a resort or discover a nature spot!',
     prof_no_fav:        'No favorites yet',
-    prof_no_fav_sub:    'Tap the ❤️ on any place card to save it here',
+    prof_no_fav_sub:    'Tap the heart icon on any place card to save it here',
     prof_search:        'Explore Places',
     prof_pay_now:       'Pay Now',
     prof_cancel:        'Cancel',
@@ -449,7 +449,7 @@ export const t = {
     submit_title:   'Add a Place',
     submit_desc:    'Know a great natural spot or resort? Share it with others and help grow our community.',
     submit_notice:  'Your submission will be reviewed by an admin within 24–48 hours before going public.',
-    submit_btn:     '📍 Submit Place',
+    submit_btn:     'Submit Place',
     submit_sending: 'Submitting...',
     submit_success: 'Submitted successfully!',
     submit_success_desc: 'Your place has been sent for admin review.',

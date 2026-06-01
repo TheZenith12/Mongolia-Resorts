@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, MapPin, ChevronDown } from 'lucide-react';
+import { Search, MapPin, ChevronDown, Tent, Leaf, Eye } from 'lucide-react';
 import { MONGOLIAN_PROVINCES } from '@/lib/types';
 import type { SiteStats } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -160,13 +160,14 @@ export default function HeroSection({ stats }: HeroSectionProps) {
         {/* Stats row */}
         <div className="flex items-center gap-8 mt-12 animate-fade-up delay-500">
           {[
-            { value: stats.total_resorts, label: tr('stat_resorts'), icon: '🏕' },
-            { value: stats.total_nature,  label: tr('stat_nature'),  icon: '🌿' },
-            { value: stats.total_views,   label: tr('stat_views'),   icon: '👁' },
+            { value: stats.total_resorts, label: tr('stat_resorts'), icon: <Tent  size={22} /> },
+            { value: stats.total_nature,  label: tr('stat_nature'),  icon: <Leaf  size={22} /> },
+            { value: stats.total_views,   label: tr('stat_views'),   icon: <Eye   size={22} /> },
           ].map((s) => (
             <div key={s.label} className="text-white">
-              <div className="font-display text-3xl font-semibold text-amber-300">
-                {s.icon} {s.value.toLocaleString()}
+              <div className="flex items-center gap-2 font-display text-3xl font-semibold text-amber-300">
+                <span className="text-amber-300">{s.icon}</span>
+                {s.value.toLocaleString()}
               </div>
               <div className="text-forest-300 text-sm mt-0.5">{s.label}</div>
             </div>

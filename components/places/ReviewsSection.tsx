@@ -45,7 +45,7 @@ export default function ReviewsSection({ placeId, reviews, profile }: ReviewsSec
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!rating) { toast.error('⭐'); return; }
+    if (!rating) { toast.error('Үнэлгээ сонгоно уу'); return; }
     if (!body)   { toast.error(tr('reviews_body_placeholder')); return; }
 
     setLoading(true);
@@ -84,8 +84,8 @@ export default function ReviewsSection({ placeId, reviews, profile }: ReviewsSec
     <div>
       <div className="flex items-center gap-3 mb-6">
         <h2 className="font-display text-2xl font-semibold text-forest-900">{tr('reviews_title')}</h2>
-        <span className="badge bg-forest-50 text-forest-700 border-forest-200">
-          ⭐ {avg} · {localReviews.length} {tr('reviews_count')}
+        <span className="badge bg-forest-50 text-forest-700 border-forest-200 flex items-center gap-1">
+          <Star size={11} className="fill-amber-400 text-amber-400" /> {avg} · {localReviews.length} {tr('reviews_count')}
         </span>
       </div>
 

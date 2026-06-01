@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Save, X, Edit2, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Save, X, Edit2, Loader2, BedDouble, Users, Building2 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
 import { ImageUpload } from './ImageUpload';
@@ -254,14 +254,14 @@ export default function RoomManager({ placeId }: { placeId: string }) {
               {room.cover_image ? (
                 <img src={room.cover_image} alt={room.name} className="w-20 h-16 rounded-lg object-cover flex-shrink-0" />
               ) : (
-                <div className="w-20 h-16 rounded-lg bg-forest-50 flex items-center justify-center text-2xl flex-shrink-0">🛏</div>
+                <div className="w-20 h-16 rounded-lg bg-forest-50 flex items-center justify-center text-forest-300 flex-shrink-0"><BedDouble size={28} /></div>
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="font-semibold text-forest-900 text-sm">{room.name}</div>
                     <div className="text-xs text-forest-500 mt-0.5">
-                      👥 {room.capacity} хүн · 🏨 {room.quantity} өрөө
+                      <span className="inline-flex items-center gap-1"><Users size={10} /> {room.capacity} хүн</span> · <span className="inline-flex items-center gap-1"><Building2 size={10} /> {room.quantity} өрөө</span>
                       {!room.is_available && <span className="ml-2 text-red-400">● Хаалттай</span>}
                     </div>
                   </div>

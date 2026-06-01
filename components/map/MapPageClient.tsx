@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Map, { Marker, Popup, NavigationControl, type MapRef } from 'react-map-gl/maplibre';
-import { MapPin, X, ArrowRight, Star, Search } from 'lucide-react';
+import { MapPin, X, ArrowRight, Star, Search, Tent, Leaf } from 'lucide-react';
 import { formatPrice, cn } from '@/lib/utils';
 import type { Place } from '@/lib/types';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -53,16 +53,16 @@ export default function MapPageClient({ places }: Props) {
 
         <div className="flex gap-1.5 ml-2">
           {[
-            { value: 'all',    label: 'Бүгд' },
-            { value: 'resort', label: '🏕 Амралт' },
-            { value: 'nature', label: '🌿 Байгаль' },
+            { value: 'all',    label: 'Бүгд',    icon: null },
+            { value: 'resort', label: 'Амралт',  icon: <Tent size={12} /> },
+            { value: 'nature', label: 'Байгаль', icon: <Leaf size={12} /> },
           ].map(opt => (
             <button key={opt.value} onClick={() => setFilter(opt.value as any)}
               className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
                 filter === opt.value ? 'bg-forest-700 text-white' : 'bg-forest-50 text-forest-600 hover:bg-forest-100'
               )}>
-              {opt.label}
+              {opt.icon}{opt.label}
             </button>
           ))}
         </div>
@@ -91,9 +91,9 @@ export default function MapPageClient({ places }: Props) {
                     'w-full flex items-start gap-3 p-4 text-left transition-all hover:bg-forest-50',
                     selected?.id === place.id ? 'bg-forest-50 border-l-2 border-forest-600' : ''
                   )}>
-                  <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-sm',
-                    place.type === 'resort' ? 'bg-amber-50' : 'bg-forest-50')}>
-                    {place.type === 'resort' ? '🏕' : '🌿'}
+                  <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0',
+                    place.type === 'resort' ? 'bg-amber-50 text-amber-600' : 'bg-forest-50 text-forest-600')}>
+                    {place.type === 'resort' ? <Tent size={16} /> : <Leaf size={16} />}
                   </div>
                   <div className="min-w-0">
                     <div className="font-medium text-forest-900 text-sm leading-tight truncate">{place.name}</div>
@@ -135,11 +135,11 @@ export default function MapPageClient({ places }: Props) {
                 onClick={e => { e.originalEvent.stopPropagation(); handleSelect(place); }}
               >
                 <div className={cn(
-                  'w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-sm cursor-pointer transition-transform hover:scale-110',
+                  'w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white cursor-pointer transition-transform hover:scale-110',
                   selected?.id === place.id ? 'scale-125' : '',
                   place.type === 'resort' ? 'bg-amber-500' : 'bg-forest-600'
                 )}>
-                  {place.type === 'resort' ? '🏕' : '🌿'}
+                  {place.type === 'resort' ? <Tent size={14} /> : <Leaf size={14} />}
                 </div>
               </Marker>
             ))}
@@ -163,8 +163,8 @@ export default function MapPageClient({ places }: Props) {
                       <img src={selected.cover_image} alt={selected.name}
                         className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
                     ) : (
-                      <div className="w-14 h-14 rounded-xl bg-forest-50 flex items-center justify-center text-2xl flex-shrink-0">
-                        {selected.type === 'resort' ? '🏕' : '🌿'}
+                      <div className={cn('w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0', selected.type === 'resort' ? 'bg-amber-50 text-amber-600' : 'bg-forest-50 text-forest-600')}>
+                        {selected.type === 'resort' ? <Tent size={28} /> : <Leaf size={28} />}
                       </div>
                     )}
                     <div>

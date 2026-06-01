@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { getCurrentProfile } from '@/lib/actions/auth';
 import { getUserBookings, getUserLikedPlaces } from '@/lib/actions/auth';
 import { formatPrice } from '@/lib/utils';
-import { MapPin, ArrowRight, Heart, Settings } from 'lucide-react';
+import { MapPin, ArrowRight, Heart, Settings, Tent, Leaf } from 'lucide-react';
 import ProfileTabs from '@/components/profile/ProfileTabs';
 import BookingsListClient from '@/components/profile/BookingsListClient';
 
@@ -58,12 +58,12 @@ export default async function MyBookingsPage({
             <p className="text-forest-500 mb-6 text-sm mt-6">{likedPlaces.length} дуртай газар</p>
             {likedPlaces.length === 0 ? (
               <div className="card p-12 text-center">
-                <div className="text-5xl mb-4">❤️</div>
+                <div className="flex justify-center mb-4"><Heart size={48} className="text-red-200" /></div>
                 <h2 className="font-display text-2xl font-semibold text-forest-700 mb-2">
                   Дуртай газар байхгүй байна
                 </h2>
                 <p className="text-forest-500 mb-6 text-sm">
-                  Газрын картан дахь ❤️ товчийг дарж дуртай газраа хадгалаарай
+                  Газрын картан дахь зүрхний товчийг дарж дуртай газраа хадгалаарай
                 </p>
                 <Link href="/places" className="btn-primary">Газар хайх</Link>
               </div>
@@ -80,8 +80,8 @@ export default async function MyBookingsPage({
                           className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-4xl">
-                          {place.type === 'resort' ? '🏕' : '🌿'}
+                        <div className={`absolute inset-0 flex items-center justify-center ${place.type === 'resort' ? 'text-amber-300' : 'text-forest-300'}`}>
+                          {place.type === 'resort' ? <Tent size={40} /> : <Leaf size={40} />}
                         </div>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-forest-950/50 via-transparent to-transparent" />

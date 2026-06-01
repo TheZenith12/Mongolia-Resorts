@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, MapPin, Loader2 } from 'lucide-react';
+import { Search, MapPin, Loader2, Tent, Leaf } from 'lucide-react';
 
 interface Suggestion {
   id: string;
@@ -131,8 +131,8 @@ export default function SearchAutocomplete({
                   className="w-9 h-9 rounded-lg object-cover flex-shrink-0"
                 />
               ) : (
-                <div className="w-9 h-9 rounded-lg bg-forest-100 flex items-center justify-center text-lg flex-shrink-0">
-                  {s.type === 'resort' ? '🏕' : '🌿'}
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${s.type === 'resort' ? 'bg-amber-50 text-amber-500' : 'bg-forest-50 text-forest-500'}`}>
+                  {s.type === 'resort' ? <Tent size={16} /> : <Leaf size={16} />}
                 </div>
               )}
               <div className="flex-1 min-w-0">

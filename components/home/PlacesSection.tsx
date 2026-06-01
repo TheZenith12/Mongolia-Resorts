@@ -2,6 +2,7 @@ import { getPlaces } from '@/lib/actions/places';
 import { getUserLikes } from '@/lib/actions/auth';
 import PlacesGrid from '@/components/places/PlacesGrid';
 import PlacesSectionHeader from '@/components/places/PlacesSectionHeader';
+import { Settings } from 'lucide-react';
 
 interface PlacesSectionProps {
   searchParams: {
@@ -39,7 +40,7 @@ export default async function PlacesSection({ searchParams }: PlacesSectionProps
     return (
       <section className="page-container py-16">
         <div className="text-center py-20 bg-white rounded-2xl border border-forest-100">
-          <div className="text-5xl mb-4">🔧</div>
+          <div className="flex justify-center mb-4"><Settings size={48} className="text-forest-300" /></div>
           <h2 className="font-display text-2xl font-semibold text-forest-700 mb-3">
             MongoDB тохируулах шаардлагатай
           </h2>

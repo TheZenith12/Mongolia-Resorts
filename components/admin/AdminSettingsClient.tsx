@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Save, Globe, Phone, Facebook, Instagram, Loader2, CheckCircle2 } from 'lucide-react';
+import { Save, Globe, Phone, Facebook, Instagram, Loader2, CheckCircle2, Crown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import type { Profile } from '@/lib/types';
 import { updateSiteSettings } from '@/lib/actions/settings';
@@ -138,7 +138,7 @@ export default function AdminSettingsClient({ profile, initialSettings }: Props)
           <h2 className="font-semibold text-forest-900 mb-4">Миний профайл</h2>
           <div className="p-4 bg-forest-50 rounded-xl text-sm text-forest-700 space-y-1.5">
             <p><span className="text-forest-500">Нэр:</span> <strong>{(profile as any).full_name ?? '—'}</strong></p>
-            <p><span className="text-forest-500">Эрх:</span> <strong className="text-amber-600">👑 Super Admin</strong></p>
+            <p><span className="text-forest-500">Эрх:</span> <strong className="flex items-center gap-1 text-amber-600"><Crown size={12} /> Super Admin</strong></p>
             <p><span className="text-forest-500">ID:</span> <code className="font-mono text-xs bg-white px-2 py-0.5 rounded border border-forest-100">{profile.id}</code></p>
           </div>
           <div className="mt-3">
