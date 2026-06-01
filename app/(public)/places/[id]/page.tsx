@@ -61,7 +61,8 @@ export default async function PlacePage({ params }: PlacePageProps) {
     permanentRedirect(`/places/${p.slug}`);
   }
 
-  const reviews = await Review.find({ place_id: params.id }).sort({ created_at: -1 }).lean();
+  const placeObjectId = (doc as any)._id.toString();
+  const reviews = await Review.find({ place_id: placeObjectId }).sort({ created_at: -1 }).lean();
   const reviewsFormatted = reviews.map((r: any) => ({
     id:         r._id.toString(),
     place_id:   r.place_id,

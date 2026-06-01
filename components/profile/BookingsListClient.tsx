@@ -164,13 +164,11 @@ export default function BookingsListClient({ initialBookings }: Props) {
     setRefreshing(false);
   }, [router]);
 
-  // Auto-refresh every 30s if any booking is pending
+  // Auto-refresh every 60s
   useEffect(() => {
-    const hasPending = bookings.some(b => b.status === 'pending');
-    if (!hasPending) return;
-    const t = setInterval(handleRefresh, 30_000);
+    const t = setInterval(handleRefresh, 60_000);
     return () => clearInterval(t);
-  }, [bookings, handleRefresh]);
+  }, [handleRefresh]);
 
   // Sync when server refreshes (Next.js router.refresh updates props)
   useEffect(() => {
@@ -190,28 +188,8 @@ export default function BookingsListClient({ initialBookings }: Props) {
     );
   }
 
-  const pendingCount = bookings.filter(b => b.status === 'pending').length;
-
   return (
     <div>
-      {/* Auto-refresh notice for pending bookings */}
-      {pendingCount > 0 && (
-        <div className="flex items-center justify-between mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm">
-          <div className="flex items-center gap-2 text-amber-700">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
-            {pendingCount} {tr('bstatus_pending_msg').toLowerCase()}
-          </div>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-800 font-medium"
-          >
-            <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
-            {tr('bstatus_refresh')}
-          </button>
-        </div>
-      )}
-
       <div className="space-y-5">
         {bookings.map((booking) => {
           const place = booking.place;
@@ -233,12 +211,6 @@ export default function BookingsListClient({ initialBookings }: Props) {
                     {statusSub(booking.status)}
                   </div>
                 </div>
-                {booking.status === 'pending' && (
-                  <div className="flex items-center gap-1.5 bg-white/20 rounded-lg px-2.5 py-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                    <span className="text-white text-[11px] font-medium">{tr('bstatus_pending')}</span>
-                  </div>
-                )}
               </div>
 
               {/* Booking content */}
@@ -297,7 +269,7 @@ export default function BookingsListClient({ initialBookings }: Props) {
                             {tr('prof_view_detail')} <ArrowRight size={12} />
                           </Link>
                         )}
-                        {(booking.status === 'pending' || booking.status === 'confirmed') && (
+                        {booking.status === 'pending' && (
                           <CancelButton
                             bookingId={booking.id}
                             paymentStatus={booking.payment_status}

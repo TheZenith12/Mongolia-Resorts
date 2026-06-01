@@ -20,6 +20,7 @@ export default function AdminUserRoleChange({ userId, currentRole, assignedPlace
   const [places, setPlaces]       = useState<Place[]>([]);
   const [showPlace, setShowPlace] = useState(currentRole === 'manager');
   const [loading, setLoading]     = useState(false);
+  const [search, setSearch]       = useState('');
 
   useEffect(() => {
     fetch('/api/admin/places-list')
@@ -65,9 +66,12 @@ export default function AdminUserRoleChange({ userId, currentRole, assignedPlace
   }
 
   const currentPlaceName = places.find(p => p.id === assignedPlaceId)?.name;
+  const filteredPlaces = search.trim()
+    ? places.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
+    : places;
 
   return (
-    <div className="flex flex-col gap-2 min-w-[220px]">
+    <div className="flex flex-col gap-2 min-w-[240px]">
       {/* Role selector */}
       <select
         value={role}
@@ -82,24 +86,30 @@ export default function AdminUserRoleChange({ userId, currentRole, assignedPlace
 
       {/* Place selector — manager сонгосон үед харагдана */}
       {showPlace && (
-        <div className="flex flex-col gap-1">
-          {/* Одоогийн оноогдсон газар */}
+        <div className="flex flex-col gap-1.5">
           {assignedPlaceId && currentPlaceName && (
             <div className="text-[10px] text-forest-500 px-1">
               Одоо: <span className="font-semibold text-forest-700">🏕 {currentPlaceName}</span>
             </div>
           )}
+          {/* Search input */}
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="🔍 Газар хайх..."
+            className="text-xs border border-amber-200 rounded-lg px-2.5 py-1.5 bg-white text-forest-700 focus:outline-none focus:ring-1 focus:ring-amber-400 placeholder-forest-300"
+          />
           <div className="flex gap-1.5 items-center">
             <select
               value={placeId}
               onChange={e => setPlaceId(e.target.value)}
               disabled={loading}
-              className="text-xs border border-amber-300 rounded-lg px-2 py-1.5 bg-amber-50 text-forest-700 focus:outline-none focus:ring-1 focus:ring-amber-400 disabled:opacity-50 flex-1"
+              size={Math.min(filteredPlaces.length + 1, 5)}
+              className="text-xs border border-amber-300 rounded-lg px-2 py-1 bg-amber-50 text-forest-700 focus:outline-none focus:ring-1 focus:ring-amber-400 disabled:opacity-50 flex-1 min-h-[32px]"
             >
-              <option value="">
-                {assignedPlaceId ? '— Газар солих —' : '— Газар сонгох —'}
-              </option>
-              {places.map(p => (
+              <option value="">{assignedPlaceId ? '— Газар солих —' : '— Газар сонгох —'}</option>
+              {filteredPlaces.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
@@ -111,6 +121,9 @@ export default function AdminUserRoleChange({ userId, currentRole, assignedPlace
               {loading ? '...' : assignedPlaceId ? 'Солих' : 'Оноох'}
             </button>
           </div>
+          {search && filteredPlaces.length === 0 && (
+            <p className="text-[10px] text-forest-400 px-1">Олдсонгүй</p>
+          )}
         </div>
       )}
     </div>

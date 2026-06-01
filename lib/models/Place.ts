@@ -28,6 +28,7 @@ const PlaceSchema = new Schema({
   created_by:      String,
   // Төлбөрийн тохиргоо
   qpay_merchant_code:   String,
+  qpay_qr_image:        String,   // Manager uploaded QR image URL
   bank_name:            String,
   bank_account_number:  String,
   bank_account_name:    String,

@@ -10,7 +10,7 @@ async function getBooking(id: string) {
   if (!booking) return null;
 
   const place = await Place.findById((booking as any).place_id)
-    .select('_id name cover_image price_per_night type qpay_merchant_code bank_name bank_account_number bank_account_name bank_phone')
+    .select('_id name cover_image price_per_night type qpay_merchant_code qpay_qr_image bank_name bank_account_number bank_account_name bank_phone')
     .lean();
 
   return {
@@ -25,6 +25,7 @@ async function getBooking(id: string) {
       price_per_night:      (place as any).price_per_night ?? null,
       type:                 (place as any).type,
       qpay_merchant_code:   (place as any).qpay_merchant_code ?? null,
+      qpay_qr_image:        (place as any).qpay_qr_image ?? null,
       bank_name:            (place as any).bank_name ?? null,
       bank_account_number:  (place as any).bank_account_number ?? null,
       bank_account_name:    (place as any).bank_account_name ?? null,

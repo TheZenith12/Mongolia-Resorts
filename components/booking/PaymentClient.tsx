@@ -318,13 +318,13 @@ export default function PaymentClient({ booking, profile }: PaymentClientProps) 
                       <Smartphone size={14} className="text-white" />
                     </div>
                     <span className="font-semibold text-forest-900 text-sm">QPay</span>
-                    {qpayData.demo && (
-                      <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">DEMO</span>
-                    )}
                   </div>
 
                   <div className="bg-white border-4 border-forest-100 rounded-2xl p-3 mb-4 shadow-sm">
-                    {qpayData.qr_image ? (
+                    {/* Manager uploaded QR takes priority */}
+                    {booking.place?.qpay_qr_image ? (
+                      <img src={booking.place.qpay_qr_image} alt="QPay QR" className="w-52 h-52 object-contain" />
+                    ) : qpayData.qr_image ? (
                       <img src={`data:image/png;base64,${qpayData.qr_image}`} alt="QPay QR" className="w-52 h-52" />
                     ) : (
                       <img

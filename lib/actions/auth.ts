@@ -96,7 +96,7 @@ export async function createBooking(formData: BookingFormData) {
     user_id:         sessionUser?.id ?? null,
     total_amount,
     payment_status:  'pending',
-    status:          'pending',
+    status:          'confirmed',
   });
 
   revalidatePath('/profile/bookings');

@@ -457,6 +457,7 @@ export async function reviewPlace(id: string, action: 'approve' | 'reject', reas
 
 export interface PlacePaymentSettings {
   qpay_merchant_code:  string;
+  qpay_qr_image:       string;
   bank_name:           string;
   bank_account_number: string;
   bank_account_name:   string;
@@ -466,10 +467,11 @@ export interface PlacePaymentSettings {
 export async function getPlacePaymentSettings(placeId: string): Promise<PlacePaymentSettings> {
   await connectDB();
   const place = await Place.findById(placeId)
-    .select('qpay_merchant_code bank_name bank_account_number bank_account_name bank_phone')
+    .select('qpay_merchant_code qpay_qr_image bank_name bank_account_number bank_account_name bank_phone')
     .lean() as any;
   return {
     qpay_merchant_code:  place?.qpay_merchant_code  ?? '',
+    qpay_qr_image:       place?.qpay_qr_image       ?? '',
     bank_name:           place?.bank_name           ?? '',
     bank_account_number: place?.bank_account_number ?? '',
     bank_account_name:   place?.bank_account_name   ?? '',
@@ -496,6 +498,7 @@ export async function updatePlacePaymentSettings(
 
   await Place.findByIdAndUpdate(placeId, {
     qpay_merchant_code:  data.qpay_merchant_code  ?? '',
+    qpay_qr_image:       data.qpay_qr_image       ?? '',
     bank_name:           data.bank_name           ?? '',
     bank_account_number: data.bank_account_number ?? '',
     bank_account_name:   data.bank_account_name   ?? '',

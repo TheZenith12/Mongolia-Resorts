@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Save, Smartphone, Building2, CreditCard, User, Phone, Loader2, CheckCircle2, Copy, Check } from 'lucide-react';
+import { Save, Smartphone, Building2, CreditCard, User, Phone, Loader2, CheckCircle2, Copy, Check, Upload, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { updatePlacePaymentSettings } from '@/lib/actions/places';
 import type { PlacePaymentSettings } from '@/lib/actions/places';
@@ -49,10 +49,28 @@ export default function PaymentSettingsClient({ placeId, placeName, initialSetti
   const [form, setForm] = useState<PlacePaymentSettings>(initialSettings);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [qrUploading, setQrUploading] = useState(false);
 
   function set(key: keyof PlacePaymentSettings, value: string) {
     setForm(f => ({ ...f, [key]: value }));
     setSaved(false);
+  }
+
+  async function handleQrUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setQrUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.url) {
+        set('qpay_qr_image', data.url);
+        toast.success('QR зураг оруулагдлаа');
+      }
+    } catch { toast.error('Upload алдаа'); }
+    finally { setQrUploading(false); }
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -88,18 +106,47 @@ export default function PaymentSettingsClient({ placeId, placeName, initialSetti
           <p className="text-xs text-forest-400 mb-4">
             QPay merchant код оруулна уу. Хэрэглэгч захиалга хийхдээ QPay QR дансаа баталгаажуулахад ашиглана.
           </p>
-          <div>
-            <label className="block text-sm font-medium text-forest-700 mb-1.5">
-              Merchant код / утасны дугаар
-            </label>
-            <div className="relative">
-              <Smartphone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" />
-              <input
-                value={form.qpay_merchant_code}
-                onChange={e => set('qpay_merchant_code', e.target.value)}
-                className="input-field pl-9"
-                placeholder="99xxxxxx эсвэл QPay merchant ID"
-              />
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-forest-700 mb-1.5">
+                Merchant код / утасны дугаар
+              </label>
+              <div className="relative">
+                <Smartphone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-forest-400" />
+                <input
+                  value={form.qpay_merchant_code}
+                  onChange={e => set('qpay_merchant_code', e.target.value)}
+                  className="input-field pl-9"
+                  placeholder="99xxxxxx эсвэл QPay merchant ID"
+                />
+              </div>
+            </div>
+
+            {/* QR Image upload */}
+            <div>
+              <label className="block text-sm font-medium text-forest-700 mb-1.5">
+                QPay QR зураг <span className="text-forest-400 font-normal">(заавал биш — оруулсан бол тэрийг харуулна)</span>
+              </label>
+              {form.qpay_qr_image ? (
+                <div className="flex items-start gap-3">
+                  <img src={form.qpay_qr_image} alt="QPay QR" className="w-32 h-32 rounded-xl border border-gray-200 object-contain bg-white p-1" />
+                  <button
+                    type="button"
+                    onClick={() => set('qpay_qr_image', '')}
+                    className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 mt-1"
+                  >
+                    <X size={13} /> Устгах
+                  </button>
+                </div>
+              ) : (
+                <label className="flex items-center gap-2 cursor-pointer w-fit px-4 py-2.5 border-2 border-dashed border-gray-200 rounded-xl hover:border-green-400 transition-colors text-sm text-forest-500">
+                  {qrUploading
+                    ? <><Loader2 size={15} className="animate-spin" /> Оруулж байна...</>
+                    : <><Upload size={15} /> QR зураг оруулах</>
+                  }
+                  <input type="file" accept="image/*" className="hidden" onChange={handleQrUpload} disabled={qrUploading} />
+                </label>
+              )}
             </div>
           </div>
         </div>
